@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: wzyTest
+  #  datasource:
+  #    wzy:
+  #      jdbcUrl: jdbc:mysql://127.0.0.1:3306/wzy_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+  #      username: root
+  #      password: 28vnfmSC
+  datasource:
+    dynamic:
+      primary: wzy
+      strict: false
+      datasource:
+        wzy:
+          url: jdbc:mysql://127.0.0.1:3306/wzy_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+          username: root
+          password: 28vnfmSC
+        slave:
+          url: jdbc:mysql://127.0.0.1:3306/slave_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+          username: root
+          password: 28vnfmSC
+
+  redis:
+    host: 127.0.0.1
+    port: 6379
+
+logging:
+  level:
+    root: INFO
+#    org.springframework.cache: INFO
+#    org.springframework.boot.autoconfigure.cache: INFO
+#    com.github.benmanes.caffeine.cache: INFO
+
+#mybatis-plus:
+#  configuration:
+#    # 日志
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
