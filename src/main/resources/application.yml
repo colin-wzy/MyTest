@@ -17,15 +17,18 @@ spring:
         wzy:
           url: jdbc:mysql://127.0.0.1:3306/wzy_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
           username: root
-          password: 28vnfmSC
+          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
         slave:
           url: jdbc:mysql://127.0.0.1:3306/slave_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
           username: root
-          password: 28vnfmSC
-
+          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
   redis:
     host: 127.0.0.1
     port: 6379
+
+jasypt:
+  encryptor:
+    password: colin
 
 logging:
   level:
