@@ -1,5 +1,6 @@
 package cn.colin.config;
 
+import cn.colin.utils.MinioUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.annotation.Resource;
 import org.springframework.boot.CommandLineRunner;
@@ -29,6 +30,9 @@ public class StartupConfig {
                 user.setRealName("王钟毓");
                 user.setPwd(passwordEncoder.encode("123456"));
                 userMapper.insert(user);
+            }
+            if (!MinioUtil.bucketExists("first")) {
+                MinioUtil.makeBucket("first");
             }
         };
     }
