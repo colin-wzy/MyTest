@@ -38,7 +38,7 @@ logging:
 #    # 日志
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-
+# actuator
 management:
   endpoints:
     web:

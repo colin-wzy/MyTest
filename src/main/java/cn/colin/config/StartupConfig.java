@@ -24,16 +24,24 @@ public class StartupConfig {
     @Bean
     public CommandLineRunner init() {
         return args -> {
-            if (userMapper.selectCount(Wrappers.lambdaQuery(User.class).eq(User::getDFlag, false)) == 0) {
-                User user = new User();
-                user.setUserName("wangzhongyu");
-                user.setRealName("王钟毓");
-                user.setPwd(passwordEncoder.encode("123456"));
-                userMapper.insert(user);
-            }
-            if (!MinioUtil.bucketExists("first")) {
-                MinioUtil.makeBucket("first");
-            }
+            initUserAdmin();
+            initMinioBucket();
         };
+    }
+
+    public void initUserAdmin() {
+        if (userMapper.selectCount(Wrappers.lambdaQuery(User.class).eq(User::getDFlag, false)) == 0) {
+            User user = new User();
+            user.setUserName("wangzhongyu");
+            user.setRealName("王钟毓");
+            user.setPwd(passwordEncoder.encode("123456"));
+            userMapper.insert(user);
+        }
+    }
+
+    public void initMinioBucket() {
+        if (!MinioUtil.bucketExists("first")) {
+            MinioUtil.makeBucket("first");
+        }
     }
 }
