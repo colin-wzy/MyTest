@@ -38,3 +38,18 @@ logging:
 #    # 日志
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics  # 需要暴露的端点
+  endpoint:
+    health:
+      show-details: always  # 总是显示健康检查详细信息
+  metrics:
+    enable:
+      jvm: true  # 启用 JVM 指标
+  server:
+    port: 8080
+
