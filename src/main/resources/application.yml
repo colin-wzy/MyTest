@@ -26,6 +26,14 @@ minio:
   accessKey: igjkVGTriynTCRdC0I9U
   secretKey: KO58U83ulsZs3puKJNIGrAiKEvl14oUPwhAeW5qX
 
+zookeeper:
+  connection-string: 127.0.0.1:2181
+  session-timeout-ms: 5000
+  connection-timeout-ms: 3000
+  retry:
+    base-sleep-time-ms: 1000
+    max-retries: 3
+
 logging:
   level:
     root: INFO
