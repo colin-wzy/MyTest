@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8888
 
 spring:
   application:
@@ -59,7 +59,7 @@ management:
     enable:
       jvm: true  # 启用 JVM 指标
   server:
-    port: 8080
+    port: 8888
 
 # springdoc-openapi项目配置
 springdoc:
