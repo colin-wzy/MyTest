@@ -2,6 +2,7 @@ package cn.colin.utils;
 
 import com.google.common.collect.Lists;
 import io.minio.*;
+import io.minio.http.Method;
 import io.minio.messages.Bucket;
 import io.minio.messages.Item;
 import jakarta.annotation.Resource;
@@ -9,11 +10,13 @@ import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
@@ -82,12 +85,12 @@ public class MinioUtil {
     }
 
     @SneakyThrows
-    public static ObjectWriteResponse putObject(String bucketName, MultipartFile multipartFile) {
+    public static ObjectWriteResponse putObject(String bucketName, MultipartFile file) {
         PutObjectArgs args = PutObjectArgs.builder()
                 .bucket(bucketName)
-                .object(multipartFile.getName())
-                .contentType(multipartFile.getContentType())
-                .stream(multipartFile.getInputStream(), multipartFile.getSize(), -1)
+                .object(file.getOriginalFilename())
+                .contentType(file.getContentType())
+                .stream(file.getInputStream(), file.getSize(), -1)
                 .build();
         return minioClient.putObject(args);
     }
@@ -101,6 +104,29 @@ public class MinioUtil {
                 .stream(in, in.available(), -1)
                 .build();
         return minioClient.putObject(args);
+    }
+
+    @SneakyThrows
+    public static ObjectWriteResponse uploadFile(String bucketName, MultipartFile file) {
+        File tempFile = File.createTempFile("upload-", file.getOriginalFilename());
+        try {
+            // 将 MultipartFile 转移到临时文件
+            file.transferTo(tempFile);
+            // 每片大小5MB
+            long chunkSize = 5 * 1024 * 1024;
+            UploadObjectArgs args = UploadObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(file.getOriginalFilename())
+                    .contentType(file.getContentType())
+                    .filename(tempFile.getAbsolutePath(), chunkSize)
+                    .build();
+            return minioClient.uploadObject(args);
+        } finally {
+            // 手动删除临时文件
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+        }
     }
 
     @SneakyThrows
@@ -133,5 +159,21 @@ public class MinioUtil {
     @SneakyThrows
     public static void removeMinio(String bucketName, String fileName) {
         minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(fileName).build());
+    }
+
+    @SneakyThrows
+    public static String getFileUrl(String bucketName, String fileName, int time, TimeUnit timeUnit) {
+        boolean flag = bucketExists(bucketName);
+        if (!flag) {
+            return null;
+        }
+        GetPresignedObjectUrlArgs.Builder builder = GetPresignedObjectUrlArgs.builder()
+                .method(Method.GET)
+                .bucket(bucketName)
+                .object(fileName);
+        if (time != 0) {
+            builder.expiry(time, timeUnit);
+        }
+        return minioClient.getPresignedObjectUrl(builder.build());
     }
 }

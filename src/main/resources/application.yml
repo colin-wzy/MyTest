@@ -20,6 +20,12 @@ spring:
   redis:
     host: 127.0.0.1
     port: 6379
+  servlet:
+    multipart:
+      # 单个文件最大大小
+      max-file-size: 100MB
+      # 所有上传文件最大大小
+      max-request-size: 100MB
 
 minio:
   url: http://127.0.0.1:9000
