@@ -17,6 +17,10 @@ spring:
           url: jdbc:mysql://127.0.0.1:3306/slave_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
           username: root
           password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
+        camunda:
+          url: jdbc:mysql://127.0.0.1:3306/camunda?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+          username: root
+          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
   redis:
     host: 127.0.0.1
     port: 6379
@@ -92,3 +96,12 @@ knife4j:
     enable-dynamic-parameter: true
   basic:
     enable: false
+
+camunda:
+  bpm:
+    auto-deployment-enabled: false
+    deployment-resource-pattern: classpath:/processes/*.bpmn
+    database:
+      table-prefix: camunda.
+      type: mysql
+      schema-update: true
