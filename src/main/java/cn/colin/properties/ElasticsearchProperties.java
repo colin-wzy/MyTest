@@ -12,4 +12,6 @@ public class ElasticsearchProperties {
     private int port;
     private String scheme;
     private boolean enable;
+    private String username;
+    private String password;
 }

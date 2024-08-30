@@ -121,3 +121,5 @@ es:
   port: 9200
   scheme: http
   enable: true
+  username: elastic
+  password: jWv1I7UkurlE_ZBQ6_Au

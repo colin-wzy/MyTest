@@ -25,10 +25,9 @@ public class ElasticsearchConfig {
     @ConditionalOnProperty(name = "es.enable", havingValue = "true")
     public ElasticsearchClient elasticsearchClient() {
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("elastic", "jWv1I7UkurlE_ZBQ6_Au"));
-        RestClient restClient = RestClient.builder(new HttpHost(elasticsearchProperties.getHost(),
-                elasticsearchProperties.getPort(),
-                elasticsearchProperties.getScheme())).setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)).build();
+        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(elasticsearchProperties.getUsername(), elasticsearchProperties.getPassword()));
+        RestClient restClient = RestClient.builder(new HttpHost(elasticsearchProperties.getHost(), elasticsearchProperties.getPort(), elasticsearchProperties.getScheme()))
+                .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)).build();
         ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
         return new ElasticsearchClient(transport);
     }
