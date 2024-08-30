@@ -132,6 +132,7 @@
             <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
             <version>4.3.0</version>
         </dependency>
+        <!-- minio -->
         <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
@@ -197,6 +198,12 @@
                     <groupId>commons-io</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <!-- elasticsearch -->
+        <dependency>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+            <version>8.15.0</version>
         </dependency>
     </dependencies>
 

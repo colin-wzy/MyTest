@@ -24,6 +24,11 @@ spring:
   redis:
     host: 127.0.0.1
     port: 6379
+#  elasticsearch:
+#    uris:
+#      - http://127.0.0.1:9200
+#    username: elastic
+#    password: jWv1I7UkurlE_ZBQ6_Au
   servlet:
     multipart:
       # 单个文件最大大小
@@ -47,6 +52,7 @@ zookeeper:
 logging:
   level:
     root: INFO
+    org.apache.zookeeper.ZooKeeper: ERROR
 #    org.springframework.cache: INFO
 #    org.springframework.boot.autoconfigure.cache: INFO
 #    com.github.benmanes.caffeine.cache: INFO
@@ -58,6 +64,9 @@ logging:
 
 # actuator
 management:
+  health:
+    elasticsearch:
+      enabled: false # 排除es的健康检查，否则权限异常，如果要检查，需要增加spring.elasticsearch的配置
   endpoints:
     web:
       exposure:
@@ -87,6 +96,7 @@ springdoc:
       paths-to-match: '/**'  # 匹配所有路径
       display-name: 'cn.colin.controller下全部接口'
       packages-to-scan: cn.colin.controller # 扫描的包，用于自动发现API
+
 # knife4j的增强配置，不需要增强可以不配
 knife4j:
   enable: true
@@ -105,3 +115,9 @@ camunda:
       table-prefix: camunda.
       type: mysql
       schema-update: true
+
+es:
+  host: 127.0.0.1
+  port: 9200
+  scheme: http
+  enable: true

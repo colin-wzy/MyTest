@@ -2,16 +2,14 @@ package cn.colin.config;
 
 import cn.colin.properties.MinioProperties;
 import io.minio.MinioClient;
+import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class MinioConfig {
-    private final MinioProperties minioProperties;
-
-    public MinioConfig(MinioProperties minioProperties) {
-        this.minioProperties = minioProperties;
-    }
+    @Resource
+    private MinioProperties minioProperties;
 
     @Bean
     public MinioClient minioClient() {
