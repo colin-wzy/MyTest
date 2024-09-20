@@ -1,5 +1,7 @@
 package cn.colin.controller;
 
+import cn.colin.common.Response;
+import cn.colin.limit.RateLimited;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,8 +20,9 @@ public class RedisTestController {
     private RedisTestService redisTestService;
 
     @GetMapping("/hello")
-    public String hello() {
-        return "hello world";
+    @RateLimited(2.0)
+    public Response<String> hello() {
+        return Response.success("hello world");
     }
 
     @GetMapping("/helloRedis")

@@ -54,6 +54,21 @@ public class MinioUtil {
     }
 
     @SneakyThrows
+    public static boolean removeBucket(String bucketName) {
+        Iterable<Result<Item>> myObjects = listObjects(bucketName);
+        for (Result<Item> result : myObjects) {
+            Item item = result.get();
+            // 有对象文件，则删除失败
+            if (item.size() > 0) {
+                return false;
+            }
+        }
+        // 删除存储桶，注意，只有存储桶为空时才能删除成功。
+        minioClient.removeBucket(RemoveBucketArgs.builder().bucket(bucketName).build());
+        return !bucketExists(bucketName);
+    }
+
+    @SneakyThrows
     public static Iterable<Result<Item>> listObjects(String bucketName) {
         return minioClient.listObjects(ListObjectsArgs.builder().bucket(bucketName).build());
     }
@@ -67,21 +82,6 @@ public class MinioUtil {
             result.add(item.objectName());
         }
         return result;
-    }
-
-    @SneakyThrows
-    public static boolean removeBucket(String bucketName) {
-        Iterable<Result<Item>> myObjects = listObjects(bucketName);
-        for (Result<Item> result : myObjects) {
-            Item item = result.get();
-            // 有对象文件，则删除失败
-            if (item.size() > 0) {
-                return false;
-            }
-        }
-        // 删除存储桶，注意，只有存储桶为空时才能删除成功。
-        minioClient.removeBucket(RemoveBucketArgs.builder().bucket(bucketName).build());
-        return !bucketExists(bucketName);
     }
 
     @SneakyThrows
@@ -157,7 +157,7 @@ public class MinioUtil {
     }
 
     @SneakyThrows
-    public static void removeMinio(String bucketName, String fileName) {
+    public static void removeObject(String bucketName, String fileName) {
         minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(fileName).build());
     }
 
