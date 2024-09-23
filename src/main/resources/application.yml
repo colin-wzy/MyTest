@@ -123,3 +123,7 @@ es:
   enable: true
   username: elastic
   password: jWv1I7UkurlE_ZBQ6_Au
+
+security:
+  permit-all: /redisTest/**, /user/login,/user/refreshToken, /doc.html, /v3/**, 
+    /swagger-ui.html, /swagger-ui/**, /swagger-resources/**, /webjars/**

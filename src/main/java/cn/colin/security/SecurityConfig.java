@@ -1,6 +1,7 @@
 package cn.colin.security;
 
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -32,6 +33,10 @@ public class SecurityConfig {
     private CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     @Resource
     private CustomAccessDeniedHandler customAccessDeniedHandler;
+    @Value("${security.permit-all:}")
+    private String[] permitAllList;
+//    @Value("#{'${security.permit-all:}'.empty ? null : '${security.permit-all:}'.split(',')}")
+//    private List<String> permitAllList;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -49,9 +54,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> {
-                    // 放开哪些接口
-                    authorize.requestMatchers("/redisTest/**", "/user/login","/user/refreshToken", "/doc.html", "/v3/**",
-                            "/swagger-ui.html", "/swagger-ui/**", "/swagger-resources/**", "/webjars/**").permitAll();
+                    if (permitAllList.length != 0) {
+                        // 非鉴权接口
+                        authorize.requestMatchers(permitAllList).permitAll();
+                    }
                     // 含有正确token的请求，会被直接拒绝，只允许未鉴权的用户访问
 //                    authorize.requestMatchers("/user/login").anonymous();
                     // 其他的都需要认证

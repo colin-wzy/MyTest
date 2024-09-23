@@ -36,7 +36,7 @@ public class UserController {
     }
 
     @PostMapping("/findUserById/{userId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Cacheable(value = "user", key = "#userId")
 //    @PreAuthorize("authentication.name == 'test'")
     public Response<User> findUserById(@PathVariable String userId) {
