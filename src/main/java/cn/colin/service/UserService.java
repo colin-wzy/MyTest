@@ -9,6 +9,8 @@ import cn.colin.request.LoginRequest;
 public interface UserService {
     String login(LoginRequest request);
 
+    String refreshToken(String token);
+
     void logout();
 
     User findUser(String userId);

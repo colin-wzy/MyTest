@@ -1,5 +1,6 @@
 package cn.colin.security;
 
+import cn.colin.utils.UserUtil;
 import cn.colin.ws.NotificationWebSocketHandler;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
@@ -88,7 +89,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         //TODO 实际应取user的角色，并赋值
         if ("wangzhongyu".equals(user.getUserName())) {
             List<SimpleGrantedAuthority> list = new ArrayList<>();
-            list.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            list.add(new SimpleGrantedAuthority(UserUtil.ROLE_ADMIN));
             return list;
         }
         return null;

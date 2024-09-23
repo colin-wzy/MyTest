@@ -24,6 +24,11 @@ public class UserController {
         return Response.success(userService.login(request));
     }
 
+    @PostMapping("/refreshToken")
+    public Response<String> refreshToken(@RequestParam String token) {
+        return Response.success(userService.refreshToken(token));
+    }
+
     @PostMapping("/logout")
     public Response<String> logout() {
         userService.logout();

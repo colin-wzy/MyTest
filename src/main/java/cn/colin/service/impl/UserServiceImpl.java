@@ -2,7 +2,14 @@ package cn.colin.service.impl;
 
 //import cn.colin.db.DataSource;
 //import cn.colin.db.DataSourceConfig;
+
+import cn.colin.common.Response;
 import cn.colin.service.UserService;
+import cn.colin.ws.NotificationWebSocketHandler;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -47,6 +54,29 @@ public class UserServiceImpl implements UserService {
         String token = JwtUtil.createJwt(userName, 300L);
         TokenUtil.putToken(userName, token);
         return token;
+    }
+
+    @Override
+    public String refreshToken(String token) {
+        try {
+            JwtUtil.verify(token);
+            return token;
+        } catch (TokenExpiredException e) {
+            // 过期生成新token
+            DecodedJWT jwt = JwtUtil.parseJWT(token);
+            String userName = jwt.getSubject();
+            User user = userMapper.selectOne(Wrappers.lambdaQuery(User.class).eq(User::getUserName, userName));
+            if (user == null) {
+                throw new RuntimeException("user not found");
+            }
+            redisTemplate.opsForValue().set(userName, JsonUtil.toJsonString(user), 5, TimeUnit.MINUTES);
+            String newToken = JwtUtil.createJwt(userName, 300L);
+            TokenUtil.putToken(userName, newToken);
+            return newToken;
+        } catch (JWTVerificationException e) {
+            // jwt校验不通过
+            return null;
+        }
     }
 
     @Override

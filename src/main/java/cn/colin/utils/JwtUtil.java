@@ -34,4 +34,8 @@ public class JwtUtil {
     public static DecodedJWT verify(String token) {
         return JWT.require(Algorithm.HMAC256(SIGNATURE)).build().verify(token);
     }
+
+    public static DecodedJWT parseJWT(String token) {
+        return JWT.decode(token);
+    }
 }

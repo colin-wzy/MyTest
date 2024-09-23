@@ -50,7 +50,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> {
                     // 放开哪些接口
-                    authorize.requestMatchers("/redisTest/**", "/user/login", "/doc.html", "/v3/**",
+                    authorize.requestMatchers("/redisTest/**", "/user/login","/user/refreshToken", "/doc.html", "/v3/**",
                             "/swagger-ui.html", "/swagger-ui/**", "/swagger-resources/**", "/webjars/**").permitAll();
                     // 含有正确token的请求，会被直接拒绝，只允许未鉴权的用户访问
 //                    authorize.requestMatchers("/user/login").anonymous();
