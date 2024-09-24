@@ -40,7 +40,13 @@ public class UserController {
     @Cacheable(value = "user", key = "#userId")
 //    @PreAuthorize("authentication.name == 'test'")
     public Response<User> findUserById(@PathVariable String userId) {
-        return Response.success(userService.findUser(userId));
+        return Response.success(userService.findUserById(userId));
+    }
+
+    @PostMapping("/findUserByName")
+    @Cacheable(value = "user", key = "#userName")
+    public Response<User> findUserByName(@RequestParam String userName) {
+        return Response.success(userService.findUserByName(userName));
     }
 
     @PostMapping("/findCurrentUser")

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -53,6 +54,7 @@ public class User implements Serializable, Principal {
     private Boolean dFlag;
 
     @Override
+    @JsonIgnore
     public String getName() {
         //TODO 继承Principal是为了使用@PreAuthorize("authentication.name == 'test'")进行鉴权
         return userName;

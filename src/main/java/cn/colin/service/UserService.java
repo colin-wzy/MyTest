@@ -13,7 +13,9 @@ public interface UserService {
 
     void logout();
 
-    User findUser(String userId);
+    User findUserById(String userId);
+
+    User findUserByName(String userName);
 
     User findCurrentUser();
 

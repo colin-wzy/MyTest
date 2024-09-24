@@ -1,15 +1,13 @@
 package cn.colin.service.impl;
 
-//import cn.colin.db.DataSource;
-//import cn.colin.db.DataSourceConfig;
-
-import cn.colin.common.Response;
 import cn.colin.service.UserService;
-import cn.colin.ws.NotificationWebSocketHandler;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -28,6 +26,8 @@ import cn.colin.utils.JsonUtil;
 import cn.colin.utils.JwtUtil;
 import cn.colin.utils.UserUtil;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,6 +43,18 @@ public class UserServiceImpl implements UserService {
     private AuthenticationManager authenticationManager;
     @Resource
     private StringRedisTemplate redisTemplate;
+
+    private BloomFilter<String> userNameBloomFilter;
+
+    @PostConstruct
+    public void initUserName() {
+        // 预加载数据库中的所有用户名
+        List<String> userNameList = userMapper.selectList(Wrappers.lambdaQuery(User.class)).stream().map(User::getUserName).toList();
+        userNameBloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), userNameList.size(), 0.01);
+        for (String username : userNameList) {
+            userNameBloomFilter.put(username);
+        }
+    }
 
     @Override
     public String login(LoginRequest request) {
@@ -90,10 +102,19 @@ public class UserServiceImpl implements UserService {
 
     @SneakyThrows
     @Override
-    public User findUser(String userId) {
+    public User findUserById(String userId) {
         //TODO 这里sleep测试@Cacheable注解是否生效
         Thread.sleep(2000L);
         return userMapper.selectById(userId);
+    }
+
+    @Override
+    public User findUserByName(String userName) {
+        if (!userNameBloomFilter.mightContain(userName)) {
+            return null;
+        }
+        return userMapper.selectList(Wrappers.lambdaQuery(User.class)
+                .eq(User::getUserName, userName)).stream().findFirst().orElse(null);
     }
 
     @Override
@@ -110,5 +131,6 @@ public class UserServiceImpl implements UserService {
         String pwd = user.getPwd();
         user.setPwd(passwordEncoder.encode(pwd));
         userMapper.insert(user);
+        userNameBloomFilter.put(user.getUserName());
     }
 }
