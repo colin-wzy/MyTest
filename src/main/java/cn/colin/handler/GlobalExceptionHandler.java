@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.HandlerMethod;
-import cn.colin.common.Response;
+import cn.colin.common.response.Response;
 
 /**
  * @author Administrator
@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public Response<?> accessDeniedExceptionHandler(AccessDeniedException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
-        return Response.failed(Response.FAILED_CODE, "access denied");
+        return Response.failed("access denied");
     }
 
     /**
@@ -33,6 +33,6 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public Response<?> exceptionHandler(Exception exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
-        return Response.failed(Response.FAILED_CODE, exception.getMessage());
+        return Response.failed(exception.getMessage());
     }
 }

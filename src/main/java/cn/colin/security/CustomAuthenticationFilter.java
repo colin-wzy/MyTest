@@ -1,6 +1,6 @@
 package cn.colin.security;
 
-import cn.colin.utils.UserUtil;
+import cn.colin.constants.StringConstants;
 import cn.colin.ws.NotificationWebSocketHandler;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
@@ -18,9 +18,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import cn.colin.common.Response;
+import cn.colin.common.response.Response;
 import cn.colin.utils.TokenUtil;
-import cn.colin.entity.User;
+import cn.colin.common.entity.User;
 import cn.colin.utils.JsonUtil;
 import cn.colin.utils.JwtUtil;
 
@@ -51,29 +51,29 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             String lastToken = TokenUtil.getToken(userName);
             // 不存在说明未登录
             if (lastToken == null) {
-                response.getWriter().write(JsonUtil.toJsonString(Response.failed(Response.FAILED_CODE, "user not login")));
+                response.getWriter().write(JsonUtil.toJsonString(Response.failed("user not login")));
                 return;
             }
             // 判断token是不是最后一次登录的token
             if (!lastToken.equals(token)) {
                 // 发送过期消息
                 NotificationWebSocketHandler.sendExpireMessage(token);
-                response.getWriter().write(JsonUtil.toJsonString(Response.failed(Response.FAILED_CODE, "token has expired")));
+                response.getWriter().write(JsonUtil.toJsonString(Response.failed("token has expired")));
                 return;
             }
         } catch (TokenExpiredException e) {
             // 发送过期消息
             NotificationWebSocketHandler.sendExpireMessage(token);
-            response.getWriter().write(JsonUtil.toJsonString(Response.failed(Response.FAILED_CODE, "token has expired")));
+            response.getWriter().write(JsonUtil.toJsonString(Response.failed("token has expired")));
             return;
         } catch (JWTVerificationException e) {
             // jwt校验不通过
-            response.getWriter().write(JsonUtil.toJsonString(Response.failed(Response.FAILED_CODE, "token invalid")));
+            response.getWriter().write(JsonUtil.toJsonString(Response.failed("token invalid")));
             return;
         }
         String userString = redisTemplate.opsForValue().get(userName);
         if (StringUtils.isEmpty(userString)) {
-            response.getWriter().write(JsonUtil.toJsonString(Response.failed(Response.FAILED_CODE, "user not login")));
+            response.getWriter().write(JsonUtil.toJsonString(Response.failed("user not login")));
             return;
         }
         User user = JsonUtil.fromJsonString(userString, User.class);
@@ -89,7 +89,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         //TODO 实际应取user的角色，并赋值
         if ("wangzhongyu".equals(user.getUserName())) {
             List<SimpleGrantedAuthority> list = new ArrayList<>();
-            list.add(new SimpleGrantedAuthority(UserUtil.ROLE_ADMIN));
+            list.add(new SimpleGrantedAuthority(StringConstants.ROLE_ADMIN));
             return list;
         }
         return null;

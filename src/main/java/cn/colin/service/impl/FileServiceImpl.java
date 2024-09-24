@@ -1,6 +1,6 @@
 package cn.colin.service.impl;
 
-import cn.colin.entity.MinioFile;
+import cn.colin.common.vo.MinioFile;
 import cn.colin.service.FileService;
 import cn.colin.utils.MinioUtil;
 import io.minio.StatObjectResponse;

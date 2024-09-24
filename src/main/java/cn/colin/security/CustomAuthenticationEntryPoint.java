@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
-import cn.colin.common.Response;
+import cn.colin.common.response.Response;
 import cn.colin.utils.JsonUtil;
 
 import java.io.IOException;
@@ -19,6 +19,6 @@ import java.io.IOException;
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
-        response.getWriter().write(JsonUtil.toJsonString(Response.failed(Response.FAILED_CODE, "token not found")));
+        response.getWriter().write(JsonUtil.toJsonString(Response.failed("token not found")));
     }
 }

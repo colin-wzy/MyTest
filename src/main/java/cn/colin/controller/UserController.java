@@ -6,10 +6,10 @@ import jakarta.annotation.Resource;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import cn.colin.entity.User;
-import cn.colin.request.LoginRequest;
+import cn.colin.common.entity.User;
+import cn.colin.common.request.LoginRequest;
 import cn.colin.service.UserService;
-import cn.colin.common.Response;
+import cn.colin.common.response.Response;
 
 
 /**

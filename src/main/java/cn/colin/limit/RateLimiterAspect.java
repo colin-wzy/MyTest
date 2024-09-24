@@ -1,6 +1,6 @@
 package cn.colin.limit;
 
-import cn.colin.common.Response;
+import cn.colin.common.response.Response;
 import com.google.common.util.concurrent.RateLimiter;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -27,7 +27,7 @@ public class RateLimiterAspect {
         if (rateLimiter.tryAcquire()) {
             return joinPoint.proceed();
         } else {
-            return Response.failed(Response.FAILED_CODE, "RateLimited");
+            return Response.failed("RateLimited");
         }
     }
 }

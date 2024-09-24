@@ -1,6 +1,6 @@
 package cn.colin.log;
 
-import cn.colin.entity.User;
+import cn.colin.common.entity.User;
 import cn.colin.redis.RedisMessagePublisher;
 import cn.colin.utils.UserUtil;
 import org.aspectj.lang.ProceedingJoinPoint;

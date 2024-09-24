@@ -1,4 +1,4 @@
-package cn.colin.request;
+package cn.colin.common.request;
 
 import lombok.Data;
 

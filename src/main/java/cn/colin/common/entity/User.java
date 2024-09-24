@@ -1,4 +1,4 @@
-package cn.colin.entity;
+package cn.colin.common.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

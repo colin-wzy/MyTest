@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import cn.colin.entity.User;
+import cn.colin.common.entity.User;
 import cn.colin.mapper.UserMapper;
 
 import java.net.InetAddress;

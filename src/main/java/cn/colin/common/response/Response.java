@@ -1,4 +1,4 @@
-package cn.colin.common;
+package cn.colin.common.response;
 
 import lombok.Data;
 
@@ -29,7 +29,7 @@ public class Response<T> implements Serializable {
     private T data;
 
     public static <T> Response<T> success(T data) {
-        Response<T> body = new Response<T>();
+        Response<T> body = new Response<>();
         body.setCode(SUCCESS_CODE);
         body.setMsg(SUCCESS_MSG);
         body.setData(data);
@@ -37,7 +37,7 @@ public class Response<T> implements Serializable {
     }
 
     public static <T> Response<T> failed(String code, String errorMsg) {
-        Response<T> body = new Response<T>();
+        Response<T> body = new Response<>();
         body.setCode(code);
         body.setMsg(errorMsg);
         return body;
@@ -51,5 +51,7 @@ public class Response<T> implements Serializable {
         return failed(FAILED_CODE, FAILED_MSG);
     }
 
-
+    public static <T> Response<T> failed(String errorMsg) {
+        return failed(FAILED_CODE, errorMsg);
+    }
 }

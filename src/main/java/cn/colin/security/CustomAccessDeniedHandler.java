@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
-import cn.colin.common.Response;
+import cn.colin.common.response.Response;
 import cn.colin.utils.JsonUtil;
 
 import java.io.IOException;
@@ -19,6 +19,6 @@ import java.io.IOException;
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException {
-        response.getWriter().write(JsonUtil.toJsonString(Response.failed(Response.FAILED_CODE, "access denied")));
+        response.getWriter().write(JsonUtil.toJsonString(Response.failed("access denied")));
     }
 }

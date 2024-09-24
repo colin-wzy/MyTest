@@ -1,6 +1,6 @@
 package cn.colin.controller;
 
-import cn.colin.common.Response;
+import cn.colin.common.response.Response;
 import cn.colin.limit.RateLimited;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;

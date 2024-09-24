@@ -1,4 +1,4 @@
-package cn.colin.entity;
+package cn.colin.common.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

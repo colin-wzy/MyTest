@@ -1,7 +1,7 @@
 package cn.colin.service;
 
-import cn.colin.entity.User;
-import cn.colin.request.LoginRequest;
+import cn.colin.common.entity.User;
+import cn.colin.common.request.LoginRequest;
 
 /**
  * @author Administrator
