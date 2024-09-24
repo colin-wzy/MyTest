@@ -12,8 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -107,7 +105,7 @@ public class MinioUtil {
     }
 
     @SneakyThrows
-    public static ObjectWriteResponse uploadFile(String bucketName, MultipartFile file) {
+    public static ObjectWriteResponse uploadObject(String bucketName, MultipartFile file) {
         File tempFile = File.createTempFile("upload-", file.getOriginalFilename());
         try {
             // 将 MultipartFile 转移到临时文件
@@ -139,15 +137,6 @@ public class MinioUtil {
         StatObjectResponse resp = statObject(bucketName, objectName);
         return resp == null ? null : minioClient.getObject(GetObjectArgs.builder()
                 .bucket(bucketName).object(objectName).build());
-    }
-
-    @SneakyThrows
-    public static void getObject(String bucketName, String objectName, String filePath) {
-        InputStream stream = getObject(bucketName, objectName);
-        if (stream == null) {
-            return;
-        }
-        Files.copy(stream, Paths.get(filePath));
     }
 
     @SneakyThrows
