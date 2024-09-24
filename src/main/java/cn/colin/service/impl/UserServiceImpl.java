@@ -18,7 +18,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import cn.colin.utils.TokenUtil;
-import cn.colin.redis.RedisMessagePublisher;
 import cn.colin.request.LoginRequest;
 import cn.colin.entity.User;
 import cn.colin.mapper.UserMapper;
@@ -103,8 +102,6 @@ public class UserServiceImpl implements UserService {
     @SneakyThrows
     @Override
     public User findUserById(String userId) {
-        //TODO 这里sleep测试@Cacheable注解是否生效
-        Thread.sleep(2000L);
         return userMapper.selectById(userId);
     }
 
@@ -119,10 +116,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findCurrentUser() {
-        //TODO 使用redis的发布订阅
-        User user = UserUtil.getUser();
-        RedisMessagePublisher.publish(user);
-        return user;
+        return UserUtil.getUser();
     }
 
     @Override

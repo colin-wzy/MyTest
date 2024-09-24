@@ -9,6 +9,6 @@ import org.springframework.stereotype.Service;
 public class RedisMessageSubscriber {
 
     public void handlerMessage(String message) {
-        System.out.println("订阅到redis的消息：" + message);
+        System.out.println("收到一条用户操作: " + message);
     }
 }

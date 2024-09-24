@@ -1,5 +1,7 @@
 package cn.colin.controller;
 
+import cn.colin.limit.RateLimited;
+import cn.colin.log.LoggingOperation;
 import jakarta.annotation.Resource;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,6 +52,8 @@ public class UserController {
     }
 
     @PostMapping("/findCurrentUser")
+    @RateLimited()
+    @LoggingOperation
     public Response<User> findCurrentUser() {
         return Response.success(userService.findCurrentUser());
     }

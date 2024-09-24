@@ -18,10 +18,9 @@ public class RateLimiterAspect {
     // 存储不同方法的 RateLimiter 实例
     private final Map<String, RateLimiter> rateLimiterMap = new ConcurrentHashMap<>();
 
-    @Around("@annotation(RateLimited)")
-    public Object limitRate(ProceedingJoinPoint joinPoint) throws Throwable {
+    @Around("@annotation(rateLimited)")
+    public Object limitRate(ProceedingJoinPoint joinPoint, RateLimited rateLimited) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        RateLimited rateLimited = signature.getMethod().getAnnotation(RateLimited.class);
         // 生成唯一的 key 用于存储 RateLimiter
         String methodKey = signature.getDeclaringTypeName() + "." + signature.getName();
         RateLimiter rateLimiter = rateLimiterMap.computeIfAbsent(methodKey, key -> RateLimiter.create(rateLimited.value()));
