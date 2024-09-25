@@ -20,4 +20,6 @@ public interface UserService {
     User findCurrentUser();
 
     void addUser(User user);
+
+    void deleteUserById(String userId);
 }

@@ -110,6 +110,7 @@ public class UserServiceImpl implements UserService {
         if (!userNameBloomFilter.mightContain(userName)) {
             return null;
         }
+        // 布隆过滤器特性：命中了也不一定有，没有就一定没有
         return userMapper.selectList(Wrappers.lambdaQuery(User.class)
                 .eq(User::getUserName, userName)).stream().findFirst().orElse(null);
     }
@@ -126,5 +127,10 @@ public class UserServiceImpl implements UserService {
         user.setPwd(passwordEncoder.encode(pwd));
         userMapper.insert(user);
         userNameBloomFilter.put(user.getUserName());
+    }
+
+    @Override
+    public void deleteUserById(String userId) {
+        userMapper.deleteById(userId);
     }
 }
