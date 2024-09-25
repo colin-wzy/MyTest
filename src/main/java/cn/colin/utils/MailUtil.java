@@ -1,5 +1,6 @@
 package cn.colin.utils;
 
+import cn.hutool.extra.mail.UserPassAuthenticator;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 
@@ -34,12 +35,7 @@ public class MailUtil {
         properties.put("mail.smtp.host", EMAIL_SMTP_HOST);
         properties.put("mail.smtp.port", EMAIL_PORT);
         // 创建邮件会话
-        Session session = Session.getInstance(properties, new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(EMAIL_ACCOUNT, EMAIL_PASSWORD);
-            }
-        });
+        Session session = Session.getInstance(properties, new UserPassAuthenticator(EMAIL_ACCOUNT, EMAIL_PASSWORD));
         // 创建邮件内容
         Message message = new MimeMessage(session);
         message.setFrom(new InternetAddress(EMAIL_ACCOUNT, EMAIL_NICK));
