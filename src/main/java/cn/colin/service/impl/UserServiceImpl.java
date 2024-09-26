@@ -1,9 +1,11 @@
 package cn.colin.service.impl;
 
+import cn.colin.mapper.SlaveUserMapper;
 import cn.colin.service.UserService;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
@@ -36,6 +38,8 @@ import java.util.concurrent.TimeUnit;
 public class UserServiceImpl implements UserService {
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private SlaveUserMapper slaveUserMapper;
     @Resource
     private PasswordEncoder passwordEncoder;
     @Resource
@@ -132,5 +136,25 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUserById(String userId) {
         userMapper.deleteById(userId);
+    }
+
+    @Override
+    @DSTransactional
+    public void testTransactional() {
+        User mUser = new User();
+        mUser.setUserName("ttt");
+        mUser.setPwd(passwordEncoder.encode("ttt"));
+        mUser.setRealName("ttt");
+
+        User sUser = new User();
+        sUser.setUserName("sss");
+        sUser.setPwd(passwordEncoder.encode("sss"));
+        sUser.setRealName("sss");
+
+        userMapper.insert(mUser);
+        slaveUserMapper.insert(sUser);
+
+        int i = 0;
+        System.out.println(1/i);
     }
 }

@@ -72,4 +72,10 @@ public class UserController {
         userService.deleteUserById(userId);
         return Response.success();
     }
+
+    @PostMapping("/testTransactional")
+    public Response<Void> testTransactional() {
+        userService.testTransactional();
+        return Response.success();
+    }
 }
