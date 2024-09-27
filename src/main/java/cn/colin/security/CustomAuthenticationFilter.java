@@ -51,29 +51,29 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             String lastToken = TokenUtil.getToken(userName);
             // 不存在说明未登录
             if (lastToken == null) {
-                response.getWriter().write(JsonUtil.toJsonString(Response.failed("user not login")));
+                Response.failed(response, "user not login");
                 return;
             }
             // 判断token是不是最后一次登录的token
             if (!lastToken.equals(token)) {
                 // 发送过期消息
                 NotificationWebSocketHandler.sendExpireMessage(token);
-                response.getWriter().write(JsonUtil.toJsonString(Response.failed("token has expired")));
+                Response.failed(response, "token has expired");
                 return;
             }
         } catch (TokenExpiredException e) {
             // 发送过期消息
             NotificationWebSocketHandler.sendExpireMessage(token);
-            response.getWriter().write(JsonUtil.toJsonString(Response.failed("token has expired")));
+            Response.failed(response, "token has expired");
             return;
         } catch (JWTVerificationException e) {
             // jwt校验不通过
-            response.getWriter().write(JsonUtil.toJsonString(Response.failed("token invalid")));
+            Response.failed(response, "token invalid");
             return;
         }
         String userString = redisTemplate.opsForValue().get(userName);
         if (StringUtils.isEmpty(userString)) {
-            response.getWriter().write(JsonUtil.toJsonString(Response.failed("user not login")));
+            Response.failed(response, "user not login");
             return;
         }
         User user = JsonUtil.fromJsonString(userString, User.class);

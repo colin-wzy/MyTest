@@ -1,6 +1,9 @@
 package cn.colin.common.response;
 
+import cn.colin.utils.JsonUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.Data;
+import lombok.SneakyThrows;
 
 import java.io.Serializable;
 
@@ -53,5 +56,15 @@ public class Response<T> implements Serializable {
 
     public static <T> Response<T> failed(String errorMsg) {
         return failed(FAILED_CODE, errorMsg);
+    }
+
+    @SneakyThrows
+    public static void failed(HttpServletResponse response, String message) {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Cache-Control","no-cache");
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json");
+        response.getWriter().write(JsonUtil.toJsonString(failed(message)));
+        response.getWriter().flush();
     }
 }
