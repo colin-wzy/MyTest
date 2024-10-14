@@ -18,7 +18,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import cn.colin.utils.TokenUtil;
 import cn.colin.common.request.LoginRequest;
 import cn.colin.common.entity.User;
@@ -125,7 +124,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void addUser(User user) {
         String pwd = user.getPwd();
         user.setPwd(passwordEncoder.encode(pwd));

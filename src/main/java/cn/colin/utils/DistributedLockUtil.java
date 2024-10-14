@@ -65,7 +65,7 @@ public class DistributedLockUtil {
      * @return 如果成功获取锁，返回true；否则返回false
      */
     public static boolean acquireRedisLock(String lockKey, long expireTime, TimeUnit timeUnit) {
-        String lockValue = String.valueOf(Thread.currentThread().getId());
+        String lockValue = String.valueOf(Thread.currentThread().threadId());
         Boolean result = redisTemplate.opsForValue().setIfAbsent(lockKey, lockValue, expireTime, timeUnit);
         return Boolean.TRUE.equals(result);
     }
@@ -77,7 +77,7 @@ public class DistributedLockUtil {
      * @return 如果成功释放，返回true；否则返回false
      */
     public static boolean releaseRedisLock(String lockKey) {
-        String lockValue = String.valueOf(Thread.currentThread().getId());
+        String lockValue = String.valueOf(Thread.currentThread().threadId());
         String luaScript = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
         RedisScript<Long> script = new DefaultRedisScript<>(luaScript, Long.class);
         Long result = redisTemplate.execute(script, Collections.singletonList(lockKey), lockValue);
