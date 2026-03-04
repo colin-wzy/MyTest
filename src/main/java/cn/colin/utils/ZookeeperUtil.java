@@ -3,9 +3,11 @@ package cn.colin.utils;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import org.apache.curator.framework.CuratorFramework;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnBean(CuratorFramework.class)
 public class ZookeeperUtil {
     private static CuratorFramework client;
 

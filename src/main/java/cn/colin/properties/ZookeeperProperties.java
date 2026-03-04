@@ -12,6 +12,7 @@ public class ZookeeperProperties {
     private int sessionTimeoutMs;
     private int connectionTimeoutMs;
     private Retry retry;
+    private boolean enable;
 
     @Data
     public static class Retry {

@@ -48,15 +48,15 @@ public class UserServiceImpl implements UserService {
 
     private BloomFilter<String> userNameBloomFilter;
 
-    @PostConstruct
-    public void initUserName() {
-        // 预加载数据库中的所有用户名
-        List<String> userNameList = userMapper.selectList(Wrappers.lambdaQuery(User.class)).stream().map(User::getUserName).toList();
-        userNameBloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), userNameList.size(), 0.01);
-        for (String username : userNameList) {
-            userNameBloomFilter.put(username);
-        }
-    }
+//    @PostConstruct
+//    public void initUserName() {
+//        // 预加载数据库中的所有用户名
+//        List<String> userNameList = userMapper.selectList(Wrappers.lambdaQuery(User.class)).stream().map(User::getUserName).toList();
+//        userNameBloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), userNameList.size(), 0.01);
+//        for (String username : userNameList) {
+//            userNameBloomFilter.put(username);
+//        }
+//    }
 
     @Override
     public String login(LoginRequest request) {

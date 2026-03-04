@@ -4,6 +4,7 @@ import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -13,6 +14,7 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@ConditionalOnBean({StringRedisTemplate.class, CuratorFramework.class})
 public class DistributedLockUtil {
     private static CuratorFramework client;
     private static StringRedisTemplate redisTemplate;

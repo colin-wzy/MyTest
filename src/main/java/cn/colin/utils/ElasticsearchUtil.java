@@ -11,12 +11,14 @@ import co.elastic.clients.transport.endpoints.BooleanResponse;
 
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 
 @Component
+@ConditionalOnBean(ElasticsearchClient.class)
 public class ElasticsearchUtil {
 
     private static ElasticsearchClient client;

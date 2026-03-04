@@ -22,7 +22,7 @@ public class ElasticsearchConfig {
     private ElasticsearchProperties elasticsearchProperties;
 
     @Bean
-    @ConditionalOnProperty(name = "es.enable", havingValue = "true")
+    @ConditionalOnProperty(name = "es.enable", havingValue = "true", matchIfMissing = true)
     public ElasticsearchClient elasticsearchClient() {
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(elasticsearchProperties.getUsername(), elasticsearchProperties.getPassword()));

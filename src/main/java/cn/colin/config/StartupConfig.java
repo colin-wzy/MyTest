@@ -33,8 +33,8 @@ public class StartupConfig {
     @Bean
     public CommandLineRunner init() {
         return args -> {
-            initUserAdmin();
-            initMinioBucket();
+//            initUserAdmin();
+//            initMinioBucket();
             printApiUrl();
         };
     }

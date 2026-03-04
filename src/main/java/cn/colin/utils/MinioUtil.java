@@ -7,6 +7,7 @@ import io.minio.messages.Bucket;
 import io.minio.messages.Item;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnBean(MinioClient.class)
 public class MinioUtil {
     private static MinioClient minioClient;
 
