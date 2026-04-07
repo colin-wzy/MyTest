@@ -5,5 +5,5 @@ package cn.colin.constants;
  */
 public interface StringConstants {
     String REDIS_TOPIC = "redisMessage";
-    String ROLE_ADMIN = "ROLE_ADMIN";
+    String ROLE_PREFIX = "ROLE_";
 }

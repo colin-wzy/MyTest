@@ -15,10 +15,10 @@ import java.util.Date;
  * @author admin
  */
 @Data
-@TableName(value = "`user`")
+@TableName(value = "sys_user")
 public class User implements Serializable, Principal {
     @TableId(type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     /**
      * 用户名
@@ -49,9 +49,6 @@ public class User implements Serializable, Principal {
 
     @TableField(value = "update_time")
     private Date updateTime;
-
-    @TableField(value = "d_flag")
-    private Boolean dFlag;
 
     @Override
     @JsonIgnore

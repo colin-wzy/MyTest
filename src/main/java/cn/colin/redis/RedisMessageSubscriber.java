@@ -1,14 +1,16 @@
 package cn.colin.redis;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
  * @author Administrator
  */
+@Slf4j
 @Service
 public class RedisMessageSubscriber {
 
     public void handlerMessage(String message) {
-        System.out.println("收到一条用户操作: " + message);
+        log.info("Received user operation: {}", message);
     }
 }

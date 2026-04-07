@@ -1,0 +1,151 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: wzyTest
+  datasource:
+    dynamic:
+      primary: wzy
+      strict: false
+      datasource:
+        wzy:
+          url: jdbc:mysql://127.0.0.1:3306/wzy_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+          username: root
+          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
+          hikari:
+            max-lifetime: 600000
+            connection-timeout: 30000
+            validation-timeout: 5000
+        slave:
+          url: jdbc:mysql://127.0.0.1:3306/slave_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+          username: root
+          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
+          hikari:
+            max-lifetime: 600000
+            connection-timeout: 30000
+            validation-timeout: 5000
+#        camunda:
+#          url: jdbc:mysql://127.0.0.1:3306/camunda?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+#          username: root
+#          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      lettuce:
+        pool:
+          # 连接池最大连接数（使用负值表示没有限制）
+          max-active: 8
+          # 连接池最大阻塞等待时间（使用负值表示没有限制）
+          max-wait: -1ms
+          # 连接池中的最大空闲连接
+          max-idle: 8
+          # 连接池中的最小空闲连接
+          min-idle: 0
+#  elasticsearch:
+#    uris:
+#      - http://127.0.0.1:9200
+#    username: elastic
+#    password: jWv1I7UkurlE_ZBQ6_Au
+  servlet:
+    multipart:
+      # 单个文件最大大小
+      max-file-size: 100MB
+      # 所有上传文件最大大小
+      max-request-size: 100MB
+
+minio:
+  url: http://127.0.0.1:9000
+  accessKey: FEiyF9mZe2tsVHVDiETr
+  secretKey: fa4FfxeSAXC5YbbrInZLBDDCpWYFp07WY2bthQ07
+  enable: true
+  bucket-name: first
+
+zookeeper:
+  connection-string: 127.0.0.1:2181
+  session-timeout-ms: 5000
+  connection-timeout-ms: 3000
+  retry:
+    base-sleep-time-ms: 1000
+    max-retries: 3
+  enable: false
+
+logging:
+  level:
+    root: INFO
+    org.apache.zookeeper.ZooKeeper: ERROR
+#    org.springframework.cache: INFO
+#    org.springframework.boot.autoconfigure.cache: INFO
+#    com.github.benmanes.caffeine.cache: INFO
+
+#mybatis-plus:
+#  configuration:
+#    # 日志
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# actuator
+management:
+  health:
+    elasticsearch:
+      enabled: false # 排除es的健康检查，否则权限异常，如果要检查，需要增加spring.elasticsearch的配置
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics  # 需要暴露的端点
+  endpoint:
+    health:
+      show-details: always  # 总是显示健康检查详细信息
+  metrics:
+    enable:
+      jvm: true  # 启用 JVM 指标
+  server:
+    port: 8888
+
+# springdoc-openapi项目配置
+springdoc:
+  # 配置Swagger UI的访问路径和排序方式
+  swagger-ui:
+    path: /swagger-ui.html  # Swagger UI的访问路径
+    tags-sorter: alpha      # 按字母顺序排序标签
+    operations-sorter: alpha  # 按字母顺序排序操作
+  # 配置API文档的访问路径
+  api-docs:
+    path: /v3/api-docs  # API文档的访问路径
+  # 配置API分组，用于组织和管理API, 作用于/v3/api-docs访问地址
+  group-configs:
+    - group: 'default'   # API分组名称
+      paths-to-match: '/**'  # 匹配所有路径
+      display-name: 'cn.colin.controller下全部接口'
+      packages-to-scan: cn.colin.controller # 扫描的包，用于自动发现API
+
+# knife4j的增强配置，不需要增强可以不配
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    swagger-model-name: 实体类列表
+    enable-dynamic-parameter: true # 动态请求参数
+  basic:
+    enable: false
+
+#camunda:
+#  bpm:
+#    auto-deployment-enabled: false
+#    deployment-resource-pattern: classpath:/processes/*.bpmn
+#    database:
+#      table-prefix: camunda.
+#      type: mysql
+#      schema-update: true
+
+es:
+  host: 127.0.0.1
+  port: 9200
+  scheme: http
+  enable: false
+  username: elastic
+  password: jWv1I7UkurlE_ZBQ6_Au
+
+security:
+  permit-all: /redisTest/**, /user/login,/user/refreshToken, /doc.html, /v3/**, 
+    /swagger-ui.html, /swagger-ui/**, /swagger-resources/**, /webjars/**, /actuator/**

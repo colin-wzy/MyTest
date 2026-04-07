@@ -25,7 +25,11 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String userName = authentication.getName();
-        String pwd = authentication.getCredentials().toString();
+        Object credentialsObj = authentication.getCredentials();
+        if (credentialsObj == null) {
+            throw new RuntimeException("password is null");
+        }
+        String pwd = credentialsObj.toString();
         User user = userMapper.selectOne(Wrappers.lambdaQuery(User.class).eq(User::getUserName, userName));
         if (user == null) {
             throw new RuntimeException("user not found");

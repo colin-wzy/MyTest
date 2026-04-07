@@ -11,7 +11,7 @@ import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
-import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import cn.colin.utils.TokenUtil;
 import cn.colin.common.request.LoginRequest;
+import cn.colin.common.request.UpdateUserRequest;
 import cn.colin.common.entity.User;
 import cn.colin.mapper.UserMapper;
 import cn.colin.utils.JsonUtil;
@@ -27,12 +28,16 @@ import cn.colin.utils.JwtUtil;
 import cn.colin.utils.UserUtil;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import cn.colin.service.RoleService;
+import cn.colin.common.entity.Role;
 
 /**
  * @author Administrator
  */
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
     @Resource
@@ -45,18 +50,20 @@ public class UserServiceImpl implements UserService {
     private AuthenticationManager authenticationManager;
     @Resource
     private StringRedisTemplate redisTemplate;
+    @Resource
+    private RoleService roleService;
 
     private BloomFilter<String> userNameBloomFilter;
 
-//    @PostConstruct
-//    public void initUserName() {
-//        // 预加载数据库中的所有用户名
-//        List<String> userNameList = userMapper.selectList(Wrappers.lambdaQuery(User.class)).stream().map(User::getUserName).toList();
-//        userNameBloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), userNameList.size(), 0.01);
-//        for (String username : userNameList) {
-//            userNameBloomFilter.put(username);
-//        }
-//    }
+    @PostConstruct
+    public void initUserName() {
+        // 预加载数据库中的所有用户名
+        List<String> userNameList = userMapper.selectList(Wrappers.lambdaQuery(User.class)).stream().map(User::getUserName).toList();
+        userNameBloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), Math.max(userNameList.size(), 1000), 0.01);
+        for (String username : userNameList) {
+            userNameBloomFilter.put(username);
+        }
+    }
 
     @Override
     public String login(LoginRequest request) {
@@ -102,25 +109,30 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    @SneakyThrows
     @Override
-    public User findUserById(String userId) {
+    public User findUserById(Long userId) {
         return userMapper.selectById(userId);
     }
 
     @Override
-    public User findUserByName(String userName) {
-        if (!userNameBloomFilter.mightContain(userName)) {
-            return null;
-        }
+    public List<User> findUserByName(String userName) {
         // 布隆过滤器特性：命中了也不一定有，没有就一定没有
+        if (!userNameBloomFilter.mightContain(userName)) {
+            return Collections.emptyList(); // 快速返回
+        }
+        // 使用LIKE查询进行模糊搜索
         return userMapper.selectList(Wrappers.lambdaQuery(User.class)
-                .eq(User::getUserName, userName)).stream().findFirst().orElse(null);
+                .like(User::getUserName, userName));
     }
 
     @Override
     public User findCurrentUser() {
         return UserUtil.getUser();
+    }
+
+    @Override
+    public List<User> findAllUsers() {
+        return userMapper.selectList(Wrappers.lambdaQuery(User.class));
     }
 
     @Override
@@ -132,8 +144,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void deleteUserById(String userId) {
+    public void deleteUserById(Long userId) {
         userMapper.deleteById(userId);
+    }
+
+    @Override
+    public void updateUser(UpdateUserRequest request) {
+        User user = new User();
+        user.setId(request.getId());
+        user.setUserName(request.getUserName());
+        user.setRealName(request.getRealName());
+        user.setSex(request.getSex());
+        if (request.getPwd() != null && !request.getPwd().isEmpty()) {
+            user.setPwd(passwordEncoder.encode(request.getPwd()));
+        }
+        userMapper.updateById(user);
     }
 
     @Override
@@ -152,7 +177,26 @@ public class UserServiceImpl implements UserService {
         userMapper.insert(mUser);
         slaveUserMapper.insert(sUser);
 
-        int i = 0;
-        System.out.println(1/i);
+        int divisor = 0;
+        log.info("Test transactional, result: {}", 1 / divisor);
+    }
+
+    @Override
+    public void bindRoles(Long userId, List<Long> roleIds) {
+        roleService.bindRoles(userId, roleIds);
+    }
+
+    @Override
+    public List<Role> findUserRoles(Long userId) {
+        return roleService.findRolesByUserId(userId);
+    }
+
+    @Override
+    public List<Role> findCurrentUserRoles() {
+        User currentUser = UserUtil.getUser();
+        if (currentUser == null) {
+            return Collections.emptyList();
+        }
+        return roleService.findRolesByUserId(currentUser.getId());
     }
 }

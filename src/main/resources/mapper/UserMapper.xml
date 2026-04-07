@@ -9,10 +9,9 @@
         <result column="sex" jdbcType="BOOLEAN" property="sex"/>
         <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
         <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
-        <result column="d_flag" jdbcType="BOOLEAN" property="dFlag"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, user_name, real_name, pwd, sex, create_time, update_time, d_flag
+        id, user_name, real_name, pwd, sex, create_time, update_time
     </sql>
 </mapper>

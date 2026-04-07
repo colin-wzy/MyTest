@@ -60,6 +60,12 @@ public class Response<T> implements Serializable {
 
     @SneakyThrows
     public static void failed(HttpServletResponse response, String message) {
+        failed(response, 401, message);
+    }
+
+    @SneakyThrows
+    public static void failed(HttpServletResponse response, int statusCode, String message) {
+        response.setStatus(statusCode);
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Cache-Control","no-cache");
         response.setCharacterEncoding("UTF-8");

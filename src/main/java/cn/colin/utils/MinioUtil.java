@@ -96,6 +96,17 @@ public class MinioUtil {
     }
 
     @SneakyThrows
+    public static ObjectWriteResponse putObject(String bucketName, String objectName, MultipartFile file) {
+        PutObjectArgs args = PutObjectArgs.builder()
+                .bucket(bucketName)
+                .object(objectName)
+                .contentType(file.getContentType())
+                .stream(file.getInputStream(), file.getSize(), -1)
+                .build();
+        return minioClient.putObject(args);
+    }
+
+    @SneakyThrows
     public static ObjectWriteResponse putObject(String bucketName, String objectName, InputStream in, String contentType) {
         PutObjectArgs args = PutObjectArgs.builder()
                 .bucket(bucketName)
@@ -166,5 +177,19 @@ public class MinioUtil {
             builder.expiry(time, timeUnit);
         }
         return minioClient.getPresignedObjectUrl(builder.build());
+    }
+
+    @SneakyThrows
+    public static boolean copyObject(String bucketName, String sourceObject, String destObject) {
+        boolean flag = bucketExists(bucketName);
+        if (!flag) {
+            return false;
+        }
+        minioClient.copyObject(CopyObjectArgs.builder()
+                .bucket(bucketName)
+                .object(destObject)
+                .source(CopySource.builder().bucket(bucketName).object(sourceObject).build())
+                .build());
+        return true;
     }
 }

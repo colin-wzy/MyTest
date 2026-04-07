@@ -1,6 +1,13 @@
 package cn.colin.security;
 
+import cn.colin.common.entity.Role;
+import cn.colin.common.entity.User;
+import cn.colin.common.response.Response;
 import cn.colin.constants.StringConstants;
+import cn.colin.service.RoleService;
+import cn.colin.utils.JsonUtil;
+import cn.colin.utils.JwtUtil;
+import cn.colin.utils.TokenUtil;
 import cn.colin.ws.NotificationWebSocketHandler;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
@@ -18,14 +25,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import cn.colin.common.response.Response;
-import cn.colin.utils.TokenUtil;
-import cn.colin.common.entity.User;
-import cn.colin.utils.JsonUtil;
-import cn.colin.utils.JwtUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -36,6 +37,9 @@ import java.util.List;
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
     @Resource
     private StringRedisTemplate redisTemplate;
+
+    @Resource
+    private RoleService roleService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws ServletException, IOException {
@@ -86,12 +90,12 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         if (user == null) {
             return null;
         }
-        //TODO 实际应取user的角色，并赋值
-        if ("wangzhongyu".equals(user.getUserName())) {
-            List<SimpleGrantedAuthority> list = new ArrayList<>();
-            list.add(new SimpleGrantedAuthority(StringConstants.ROLE_ADMIN));
-            return list;
+        List<Role> roles = roleService.findRolesByUserId(user.getId());
+        if (roles == null || roles.isEmpty()) {
+            return null;
         }
-        return null;
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(StringConstants.ROLE_PREFIX + role.getRoleKey()))
+                .collect(java.util.stream.Collectors.toList());
     }
 }

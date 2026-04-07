@@ -12,4 +12,5 @@ public class MinioProperties {
     private String accessKey;
     private String secretKey;
     private boolean enable;
+    private String bucketName = "first";
 }
