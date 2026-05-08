@@ -1,9 +1,11 @@
 package cn.colin.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.SneakyThrows;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
+@Slf4j
 public class QuartzUtil {
     private static Scheduler scheduler;
 
@@ -12,7 +14,7 @@ public class QuartzUtil {
             scheduler = new StdSchedulerFactory("quartz.properties").getScheduler();
             scheduler.start();
         } catch (SchedulerException e) {
-            e.printStackTrace();
+            log.error("Quartz 调度器初始化失败", e);
         }
     }
 

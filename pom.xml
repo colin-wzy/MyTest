@@ -153,12 +153,6 @@
             <artifactId>annotations</artifactId>
             <version>20.1.0</version>
         </dependency>
-        <!-- Apache POI for Word/Excel preview -->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>5.2.5</version>
-        </dependency>
         <!-- mysql -->
         <dependency>
             <groupId>com.baomidou</groupId>

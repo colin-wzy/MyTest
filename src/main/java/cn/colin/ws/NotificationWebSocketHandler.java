@@ -1,7 +1,10 @@
 package cn.colin.ws;
 
+import cn.colin.utils.JwtUtil;
+import cn.colin.utils.TokenUtil;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
@@ -10,8 +13,6 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import cn.colin.utils.JwtUtil;
-import cn.colin.utils.TokenUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Administrator
  */
+@Slf4j
 @Component
 public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
@@ -38,7 +40,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(@NotNull WebSocketSession session) throws Exception {
-        System.out.println("Notification connection");
+        log.info("WebSocket 连接建立");
         String token = getToken(session);
         if (token == null) {
             session.close();
@@ -58,7 +60,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, @NotNull CloseStatus status) throws Exception {
-        System.out.println("Notification disconnected");
+        log.info("WebSocket 连接断开");
         ScheduledFuture<?> scheduledFuture = (ScheduledFuture<?>) session.getAttributes().get("scheduledFuture");
         if (scheduledFuture != null) {
             scheduledFuture.cancel(true);
@@ -80,7 +82,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
             try {
                 session.sendMessage(new TextMessage(message));
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("WebSocket 消息发送失败", e);
             }
         }
     }
@@ -94,7 +96,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
         try {
             session.sendMessage(new TextMessage(message));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("WebSocket 消息发送失败", e);
         }
     }
 
@@ -108,7 +110,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
             SESSION_MAP.remove(token);
             session.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("WebSocket 过期通知发送失败", e);
         }
     }
 
@@ -117,6 +119,6 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
         if (CollectionUtils.isEmpty(tokenList)) {
             return null;
         }
-        return tokenList.get(0);
+        return tokenList.getFirst();
     }
 }

@@ -10,7 +10,6 @@ import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -28,35 +27,30 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
-    @ResponseBody
     public Response<?> accessDeniedExceptionHandler(AccessDeniedException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         return Response.failed("access denied");
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    @ResponseBody
     public Response<?> missingServletRequestParameterExceptionHandler(MissingServletRequestParameterException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         return Response.failed("missing parameter: " + exception.getParameterName());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    @ResponseBody
     public Response<?> methodArgumentTypeMismatchExceptionHandler(MethodArgumentTypeMismatchException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         return Response.failed("parameter type mismatch: " + exception.getName());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    @ResponseBody
     public Response<?> httpMessageNotReadableExceptionHandler(HttpMessageNotReadableException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         return Response.failed("request body is invalid");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseBody
     public Response<?> methodArgumentNotValidExceptionHandler(MethodArgumentNotValidException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         String message = exception.getBindingResult().getFieldErrors().stream()
@@ -67,7 +61,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BindException.class)
-    @ResponseBody
     public Response<?> bindExceptionHandler(BindException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         String message = exception.getBindingResult().getFieldErrors().stream()
@@ -78,7 +71,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    @ResponseBody
     public Response<?> constraintViolationExceptionHandler(ConstraintViolationException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         String message = exception.getConstraintViolations().stream()
@@ -88,7 +80,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(FileServiceException.class)
-    @ResponseBody
     public Response<?> fileServiceExceptionHandler(FileServiceException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         return Response.failed(exception.getCode(), exception.getMessage());
@@ -102,7 +93,6 @@ public class GlobalExceptionHandler {
      * @return Response
      */
     @ExceptionHandler(Exception.class)
-    @ResponseBody
     public Response<?> exceptionHandler(Exception exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         return Response.failed(exception.getMessage());
