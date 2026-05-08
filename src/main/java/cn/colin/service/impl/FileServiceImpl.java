@@ -15,6 +15,8 @@ import cn.colin.service.FileService;
 import cn.colin.utils.JsonUtil;
 import cn.colin.utils.MinioUtil;
 import cn.colin.utils.UserUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -26,8 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -49,8 +51,6 @@ public class FileServiceImpl implements FileService {
 
     @Resource
     private OnlyOfficeProperties onlyOfficeProperties;
-
-    // ==================== 文件上传下载 ====================
 
     @Override
     public List<Long> uploadFiles(String bucketName, Long parentId, MultipartFile[] files) {
@@ -104,8 +104,6 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    // ==================== 文件夹管理 ====================
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createFolder(CreateFolderRequest request) {
@@ -153,8 +151,6 @@ public class FileServiceImpl implements FileService {
         return convertToFileResponseBatch(folders);
     }
 
-    // ==================== 文件列表 ====================
-
     @Override
     public FileListResponse getFileList(GetFileListRequest request) {
         LambdaQueryWrapper<File> queryWrapper = new LambdaQueryWrapper<File>()
@@ -193,8 +189,6 @@ public class FileServiceImpl implements FileService {
                 .build();
     }
 
-    // ==================== 文件预览 ====================
-
     @Override
     public FilePreviewResponse getFilePreview(GetFilePreviewRequest request) {
         File file = fileMapper.selectById(request.getFileId());
@@ -225,11 +219,11 @@ public class FileServiceImpl implements FileService {
 
     private FilePreviewResponse buildTextPreview(FilePreviewResponse.FilePreviewResponseBuilder builder,
                                                  String bucketName, String filePath) {
-        try (InputStream inputStream = MinioUtil.getObject(bucketName, filePath)) {
-            if (inputStream == null) {
+        try (InputStream in = MinioUtil.getObject(bucketName, filePath)) {
+            if (in == null) {
                 return builder.previewable(false).content("无法读取文件内容").build();
             }
-            String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            String content = IoUtil.read(in, StandardCharsets.UTF_8);
             return builder.previewable(true).previewType("text").content(content).build();
         } catch (Exception e) {
             log.error("文本预览失败: bucketName={}, filePath={}", bucketName, filePath, e);
@@ -248,8 +242,6 @@ public class FileServiceImpl implements FileService {
         return builder.previewable(true).previewType("office").officeConfig(config).build();
     }
 
-    // ==================== OnlyOffice 编辑 ====================
-
     @Override
     public OnlyOfficeConfig getOfficeEditConfig(GetFileEditRequest request) {
         File file = fileMapper.selectById(request.getFileId());
@@ -261,8 +253,6 @@ public class FileServiceImpl implements FileService {
         }
         return buildOnlyOfficeConfig(file, "edit", true);
     }
-
-    // ==================== OnlyOffice 回调 ====================
 
     @Override
     public String handleOfficeCallback(String body) {
@@ -298,17 +288,9 @@ public class FileServiceImpl implements FileService {
                 return "{\"error\":1,\"message\":\"文件不存在\"}";
             }
 
-            // 下载编辑后的文件
-            byte[] editedBytes;
-            try (InputStream in = new URL(downloadUrl).openStream()) {
-                editedBytes = in.readAllBytes();
-            }
-
-            // 上传回MinIO覆盖原文件
-            try (InputStream uploadStream = new java.io.ByteArrayInputStream(editedBytes)) {
-                MinioUtil.putObject(file.getBucketName(), file.getFilePath(), uploadStream,
-                        file.getContentType());
-            }
+            byte[] editedBytes = HttpUtil.downloadBytes(downloadUrl);
+            MinioUtil.putObject(file.getBucketName(), file.getFilePath(),
+                    new ByteArrayInputStream(editedBytes), file.getContentType());
 
             // 更新数据库中的文件大小和更新时间
             fileMapper.update(null, new LambdaUpdateWrapper<File>()
@@ -325,9 +307,6 @@ public class FileServiceImpl implements FileService {
             return "{\"error\":1,\"message\":\"" + e.getMessage() + "\"}";
         }
     }
-
-    // ==================== OnlyOffice 配置构建 ====================
-
 
     private OnlyOfficeConfig buildOnlyOfficeConfig(File file, String mode, boolean editable) {
         String fileUrl = MinioUtil.getFileUrl(file.getBucketName(), file.getFilePath(), 1, TimeUnit.HOURS);
@@ -381,63 +360,53 @@ public class FileServiceImpl implements FileService {
                 .docServerUrl(onlyOfficeProperties.getDocServerUrl())
                 .build();
     }
-    // ==================== 内容类型判断 ====================
+
+    private static final Set<String> OFFICE_TYPES = Set.of(
+            "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/pdf");
+
+    private static final Set<String> EDITABLE_OFFICE_TYPES = Set.of(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/pdf");
 
     private boolean isImageContentType(String contentType) {
-        if (contentType == null) return false;
-        return contentType.startsWith("image/");
+        return contentType != null && contentType.startsWith("image/");
     }
 
     private boolean isOfficeContentType(String contentType) {
-        if (contentType == null) return false;
-        return contentType.equals("application/msword") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
-                contentType.equals("application/vnd.ms-excel") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") ||
-                contentType.equals("application/vnd.ms-powerpoint") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.presentationml.presentation") ||
-                contentType.equals("application/pdf");
+        return contentType != null && OFFICE_TYPES.contains(contentType);
     }
 
     private boolean isEditableOfficeContentType(String contentType) {
-        if (contentType == null) return false;
-        return contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.presentationml.presentation");
+        return contentType != null && EDITABLE_OFFICE_TYPES.contains(contentType);
     }
 
     private String getFileExtension(String fileName) {
-        if (fileName == null) return "docx";
-        int dotIdx = fileName.lastIndexOf('.');
-        if (dotIdx > 0 && dotIdx < fileName.length() - 1) {
-            return fileName.substring(dotIdx + 1).toLowerCase();
-        }
-        return "docx";
+        return fileName != null && fileName.contains(".")
+                ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase() : "docx";
     }
 
     private String mapToDocumentCategory(String contentType) {
         if (contentType == null) return "word";
-        if (contentType.contains("wordprocessing") || contentType.equals("application/msword")) return "word";
-        if (contentType.contains("spreadsheet") || contentType.equals("application/vnd.ms-excel")) return "cell";
-        if (contentType.contains("presentation") || contentType.equals("application/vnd.ms-powerpoint")) return "slide";
-        if (contentType.equals("application/pdf")) return "pdf";
+        if (contentType.contains("word")) return "word";
+        if (contentType.contains("spreadsheet") || contentType.contains("excel")) return "cell";
+        if (contentType.contains("presentation") || contentType.contains("powerpoint")) return "slide";
+        if (contentType.contains("pdf")) return "pdf";
         return "word";
     }
 
     private Long parseFileIdFromKey(String key) {
-        if (key == null) return null;
-        int underscoreIdx = key.indexOf('_');
-        if (underscoreIdx > 0) {
-            try {
-                return Long.parseLong(key.substring(0, underscoreIdx));
-            } catch (NumberFormatException e) {
-                return null;
-            }
+        if (key == null || !key.contains("_")) return null;
+        try {
+            return Long.parseLong(key.substring(0, key.indexOf('_')));
+        } catch (NumberFormatException e) {
+            return null;
         }
-        return null;
     }
-
-    // ==================== 文件操作 ====================
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -539,8 +508,6 @@ public class FileServiceImpl implements FileService {
         }
         return convertToFileResponseBatch(Collections.singletonList(file)).getFirst();
     }
-
-    // ==================== 私有方法 ====================
 
     /**
      * 检查目标目录下是否存在同名文件或文件夹

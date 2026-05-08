@@ -95,9 +95,6 @@ public class OnlyOfficeConfig {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "OnlyOffice 编辑器自定义配置")
     public static class Customization {
-        @Schema(description = "关闭时强制保存")
-        private Boolean forcesave;
-
         @Schema(description = "启用自动保存")
         private Boolean autosave;
 
