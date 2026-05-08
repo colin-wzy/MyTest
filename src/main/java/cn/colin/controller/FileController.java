@@ -1,5 +1,6 @@
 package cn.colin.controller;
 
+import cn.colin.common.office.OnlyOfficeConfig;
 import cn.colin.common.request.*;
 import cn.colin.common.response.FileListResponse;
 import cn.colin.common.response.FilePreviewResponse;
@@ -160,6 +161,28 @@ public class FileController {
     public Response<FilePreviewResponse> preview(@RequestBody @Valid GetFilePreviewRequestVO request) {
         Long actualFileId = Long.parseLong(request.getFileId());
         return Response.success(fileService.getFilePreview(new GetFilePreviewRequest(request.getBucketName(), actualFileId)));
+    }
+
+    // ==================== OnlyOffice 接口 ====================
+
+    /**
+     * 获取文档编辑配置
+     */
+    @PostMapping("/office/edit")
+    @Operation(summary = "获取文档编辑配置", description = "获取OnlyOffice在线编辑配置，仅支持docx/xlsx/pptx格式")
+    public Response<OnlyOfficeConfig> officeEdit(@RequestBody @Valid GetFileEditRequest request) {
+        return Response.success(fileService.getOfficeEditConfig(request));
+    }
+
+    /**
+     * OnlyOffice保存回调（返回 application/json，OnlyOffice 严格要求此 Content-Type）
+     */
+    @PostMapping("/office/callback")
+    @Operation(summary = "OnlyOffice保存回调", description = "OnlyOffice编辑保存后的回调接口")
+    public ResponseEntity<String> officeCallback(@RequestBody String body) {
+        String result = fileService.handleOfficeCallback(body);
+        log.info("OnlyOffice回调处理结果: {}", result);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(result);
     }
 
     // ==================== 文件上传下载接口 ====================

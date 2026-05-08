@@ -1,7 +1,7 @@
 package cn.colin.handler;
 
 import cn.colin.common.response.Response;
-import cn.colin.exceptions.BusinessException;
+import cn.colin.exceptions.FileServiceException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -87,9 +87,9 @@ public class GlobalExceptionHandler {
         return Response.failed(message);
     }
 
-    @ExceptionHandler(BusinessException.class)
+    @ExceptionHandler(FileServiceException.class)
     @ResponseBody
-    public Response<?> businessExceptionHandler(BusinessException exception, HandlerMethod handlerMethod) {
+    public Response<?> fileServiceExceptionHandler(FileServiceException exception, HandlerMethod handlerMethod) {
         log.error("{}.{} error", handlerMethod.getBeanType().getSimpleName(), handlerMethod.getMethod().getName(), exception);
         return Response.failed(exception.getCode(), exception.getMessage());
     }

@@ -1,5 +1,6 @@
 package cn.colin.service;
 
+import cn.colin.common.office.OnlyOfficeConfig;
 import cn.colin.common.request.*;
 import cn.colin.common.response.FileListResponse;
 import cn.colin.common.response.FilePreviewResponse;
@@ -129,4 +130,20 @@ public interface FileService {
      * @return 文件信息
      */
     FileResponse getFileById(Long fileId);
+
+    /**
+     * 获取OnlyOffice文档编辑配置
+     *
+     * @param request 编辑请求
+     * @return OnlyOffice配置
+     */
+    OnlyOfficeConfig getOfficeEditConfig(GetFileEditRequest request);
+
+    /**
+     * 处理OnlyOffice保存回调
+     *
+     * @param body 回调请求体JSON
+     * @return 回调响应
+     */
+    String handleOfficeCallback(String body);
 }

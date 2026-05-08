@@ -2,30 +2,34 @@ package cn.colin.service.impl;
 
 import cn.colin.common.entity.File;
 import cn.colin.common.entity.User;
+import cn.colin.common.office.OnlyOfficeConfig;
 import cn.colin.common.request.*;
 import cn.colin.common.response.FileListResponse;
 import cn.colin.common.response.FilePreviewResponse;
 import cn.colin.common.response.FileResponse;
-import cn.colin.exceptions.BusinessException;
+import cn.colin.exceptions.FileServiceException;
 import cn.colin.mapper.FileMapper;
 import cn.colin.mapper.UserMapper;
+import cn.colin.properties.OnlyOfficeProperties;
 import cn.colin.service.FileService;
+import cn.colin.utils.JsonUtil;
 import cn.colin.utils.MinioUtil;
 import cn.colin.utils.UserUtil;
+import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -43,6 +47,9 @@ public class FileServiceImpl implements FileService {
     @Resource
     private UserMapper userMapper;
 
+    @Resource
+    private OnlyOfficeProperties onlyOfficeProperties;
+
     // ==================== 文件上传下载 ====================
 
     @Override
@@ -52,16 +59,19 @@ public class FileServiceImpl implements FileService {
         for (MultipartFile file : files) {
             try {
                 String originalFilename = file.getOriginalFilename();
+                if (StringUtils.isEmpty(originalFilename)) {
+                    throw new FileServiceException("上传文件中的文件名不可为空");
+                }
                 if (checkFileNameExists(bucketName, parentId, originalFilename, false) > 0) {
-                    throw new BusinessException("同级目录下已存在同名文件: " + originalFilename);
+                    throw new FileServiceException("同级目录下已存在同名文件: " + originalFilename);
                 }
                 String filePath = generateFilePathWithTimestamp(originalFilename, timestamp);
                 MinioUtil.putObject(bucketName, filePath, file);
-                File fileEntity = createFileEntity(bucketName, parentId, originalFilename, filePath, file.getSize(), file.getContentType(), false);
+                File fileEntity = createFileEntity(bucketName, parentId, originalFilename, filePath, file.getSize(), file.getContentType());
                 fileMapper.insert(fileEntity);
                 fileIds.add(fileEntity.getId());
                 log.info("批量上传文件成功: bucketName={}, fileName={}, fileId={}", bucketName, originalFilename, fileEntity.getId());
-            } catch (BusinessException e) {
+            } catch (FileServiceException e) {
                 log.error("批量上传文件失败: {}", e.getMessage());
                 throw e;
             } catch (Exception e) {
@@ -69,7 +79,7 @@ public class FileServiceImpl implements FileService {
             }
         }
         if (fileIds.isEmpty()) {
-            throw new BusinessException("所有文件上传失败");
+            throw new FileServiceException("所有文件上传失败");
         }
         return fileIds;
     }
@@ -80,7 +90,7 @@ public class FileServiceImpl implements FileService {
             return MinioUtil.getObject(bucketName, fileName);
         } catch (Exception e) {
             log.error("下载文件失败: bucketName={}, fileName={}", bucketName, fileName, e);
-            throw new BusinessException("下载文件失败: " + e.getMessage());
+            throw new FileServiceException("下载文件失败: " + e.getMessage());
         }
     }
 
@@ -90,7 +100,7 @@ public class FileServiceImpl implements FileService {
             return MinioUtil.getFileUrl(bucketName, fileName, 5, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.error("获取文件URL失败: bucketName={}, fileName={}", bucketName, fileName, e);
-            throw new BusinessException("获取文件URL失败: " + e.getMessage());
+            throw new FileServiceException("获取文件URL失败: " + e.getMessage());
         }
     }
 
@@ -100,7 +110,7 @@ public class FileServiceImpl implements FileService {
     @Transactional(rollbackFor = Exception.class)
     public Long createFolder(CreateFolderRequest request) {
         if (checkFileNameExists(request.getBucketName(), request.getParentId(), request.getFolderName(), true) > 0) {
-            throw new BusinessException("同级目录下已存在同名文件夹");
+            throw new FileServiceException("同级目录下已存在同名文件夹");
         }
         File folder = new File();
         folder.setFileName(request.getFolderName());
@@ -122,7 +132,7 @@ public class FileServiceImpl implements FileService {
                 .eq(File::getBucketName, request.getBucketName())
                 .eq(File::getParentId, request.getFolderId()));
         if (count > 0) {
-            throw new BusinessException("文件夹不为空，无法删除");
+            throw new FileServiceException("文件夹不为空，无法删除");
         }
         // 物理删除文件夹
         int deleted = fileMapper.deleteById(request.getFolderId());
@@ -140,7 +150,7 @@ public class FileServiceImpl implements FileService {
                 .eq(File::getParentId, parentId)
                 .eq(File::getIsFolder, true)
                 .orderByAsc(File::getFileName));
-        return folders.stream().map(this::convertToFileResponse).collect(Collectors.toList());
+        return convertToFileResponseBatch(folders);
     }
 
     // ==================== 文件列表 ====================
@@ -157,7 +167,7 @@ public class FileServiceImpl implements FileService {
         }
 
         // 搜索关键字
-        if (StringUtils.hasText(request.getSearchKeyword())) {
+        if (StringUtils.isNotEmpty(request.getSearchKeyword())) {
             queryWrapper.like(File::getFileName, request.getSearchKeyword());
         }
 
@@ -173,9 +183,7 @@ public class FileServiceImpl implements FileService {
         queryWrapper.orderByDesc(File::getIsFolder).orderByAsc(File::getFileName);
         Page<File> resultPage = fileMapper.selectPage(page, queryWrapper);
 
-        List<FileResponse> files = resultPage.getRecords().stream()
-                .map(this::convertToFileResponse)
-                .collect(Collectors.toList());
+        List<FileResponse> files = convertToFileResponseBatch(resultPage.getRecords());
 
         return FileListResponse.builder()
                 .files(files)
@@ -191,119 +199,242 @@ public class FileServiceImpl implements FileService {
     public FilePreviewResponse getFilePreview(GetFilePreviewRequest request) {
         File file = fileMapper.selectById(request.getFileId());
         if (file == null) {
-            throw new BusinessException("文件不存在");
+            throw new FileServiceException("文件不存在");
         }
 
         String contentType = file.getContentType();
         boolean isTextFile = contentType != null && contentType.startsWith("text/");
-        boolean isWord = isWordContentType(contentType);
-        boolean isExcel = isExcelContentType(contentType);
-        boolean previewable = isTextFile || isWord || isExcel;
+        boolean isImage = isImageContentType(contentType);
+        boolean isOffice = isOfficeContentType(contentType);
 
         FilePreviewResponse.FilePreviewResponseBuilder builder = FilePreviewResponse.builder()
                 .fileId(file.getId())
                 .fileName(file.getFileName())
-                .contentType(contentType)
-                .previewable(previewable);
+                .contentType(contentType);
 
-        if (!previewable) {
-            builder.content("该文件类型不支持预览，请下载后查看");
-            return builder.build();
+        if (isTextFile) {
+            return buildTextPreview(builder, request.getBucketName(), file.getFilePath());
+        } else if (isImage) {
+            return buildImagePreview(builder, request.getBucketName(), file.getFilePath());
+        } else if (isOffice) {
+            return buildOfficePreview(builder, file);
+        } else {
+            return builder.previewable(false).content("该文件类型不支持预览，请下载后查看").build();
         }
-
-        try (InputStream inputStream = MinioUtil.getObject(request.getBucketName(), file.getFilePath())) {
-            if (inputStream == null) {
-                builder.content("无法读取文件内容").previewable(false);
-            } else if (isTextFile) {
-                builder.content(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
-            } else if (isWord) {
-                builder.content(extractWordText(inputStream));
-            } else if (isExcel) {
-                builder.content(extractExcelText(inputStream));
-            }
-        } catch (Exception e) {
-            log.error("预览文件失败: fileId={}", request.getFileId(), e);
-            builder.content("预览失败").previewable(false);
-        }
-
-        return builder.build();
     }
 
-    /**
-     * 判断是否为Word文档类型
-     */
-    private boolean isWordContentType(String contentType) {
+    private FilePreviewResponse buildTextPreview(FilePreviewResponse.FilePreviewResponseBuilder builder,
+                                                 String bucketName, String filePath) {
+        try (InputStream inputStream = MinioUtil.getObject(bucketName, filePath)) {
+            if (inputStream == null) {
+                return builder.previewable(false).content("无法读取文件内容").build();
+            }
+            String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            return builder.previewable(true).previewType("text").content(content).build();
+        } catch (Exception e) {
+            log.error("文本预览失败: bucketName={}, filePath={}", bucketName, filePath, e);
+            return builder.previewable(false).content("预览失败").build();
+        }
+    }
+
+    private FilePreviewResponse buildImagePreview(FilePreviewResponse.FilePreviewResponseBuilder builder,
+                                                  String bucketName, String filePath) {
+        String imageUrl = MinioUtil.getFileUrl(bucketName, filePath, 30, TimeUnit.MINUTES);
+        return builder.previewable(true).previewType("image").imageUrl(imageUrl).build();
+    }
+
+    private FilePreviewResponse buildOfficePreview(FilePreviewResponse.FilePreviewResponseBuilder builder, File file) {
+        OnlyOfficeConfig config = buildOnlyOfficeConfig(file, "view", false);
+        return builder.previewable(true).previewType("office").officeConfig(config).build();
+    }
+
+    // ==================== OnlyOffice 编辑 ====================
+
+    @Override
+    public OnlyOfficeConfig getOfficeEditConfig(GetFileEditRequest request) {
+        File file = fileMapper.selectById(request.getFileId());
+        if (file == null) {
+            throw new FileServiceException("文件不存在");
+        }
+        if (!isEditableOfficeContentType(file.getContentType())) {
+            throw new FileServiceException("该文件类型不支持在线编辑，仅支持 docx/xlsx/pptx 格式");
+        }
+        return buildOnlyOfficeConfig(file, "edit", true);
+    }
+
+    // ==================== OnlyOffice 回调 ====================
+
+    @Override
+    public String handleOfficeCallback(String body) {
+        log.info("收到OnlyOffice回调: body={}", body != null ? body.substring(0, Math.min(body.length(), 300)) : "null");
+        try {
+            JSONObject root = JsonUtil.parseObj(body);
+            int status = root.getInt("status", 0);
+            String key = root.getStr("key");
+
+            // OnlyOffice 状态码: 1=编辑中, 2=已保存需下载, 3=保存出错, 4=关闭无变化, 6=强制保存
+            log.info("OnlyOffice回调 status={}, key={}", status, key);
+
+            if (status != 2 && status != 6) {
+                return "{\"error\":0}";
+            }
+
+            String downloadUrl = root.getStr("url");
+            if (downloadUrl == null || downloadUrl.isEmpty()) {
+                log.error("OnlyOffice回调缺少下载URL");
+                return "{\"error\":1,\"message\":\"缺少下载URL\"}";
+            }
+
+            // 从key中解析文件ID（key格式: fileId_updateTime）
+            Long fileId = parseFileIdFromKey(key);
+            if (fileId == null) {
+                log.error("无法从key解析文件ID: {}", key);
+                return "{\"error\":1,\"message\":\"无法解析文件ID\"}";
+            }
+
+            File file = fileMapper.selectById(fileId);
+            if (file == null) {
+                log.error("回调文件不存在: fileId={}", fileId);
+                return "{\"error\":1,\"message\":\"文件不存在\"}";
+            }
+
+            // 下载编辑后的文件
+            byte[] editedBytes;
+            try (InputStream in = new URL(downloadUrl).openStream()) {
+                editedBytes = in.readAllBytes();
+            }
+
+            // 上传回MinIO覆盖原文件
+            try (InputStream uploadStream = new java.io.ByteArrayInputStream(editedBytes)) {
+                MinioUtil.putObject(file.getBucketName(), file.getFilePath(), uploadStream,
+                        file.getContentType());
+            }
+
+            // 更新数据库中的文件大小和更新时间
+            fileMapper.update(null, new LambdaUpdateWrapper<File>()
+                    .eq(File::getId, fileId)
+                    .set(File::getFileSize, (long) editedBytes.length)
+                    .set(File::getUpdateTime, new java.util.Date()));
+
+            log.info("OnlyOffice回调保存成功: fileId={}, filePath={}, newSize={}",
+                    fileId, file.getFilePath(), editedBytes.length);
+            return "{\"error\":0}";
+
+        } catch (Exception e) {
+            log.error("处理OnlyOffice回调失败", e);
+            return "{\"error\":1,\"message\":\"" + e.getMessage() + "\"}";
+        }
+    }
+
+    // ==================== OnlyOffice 配置构建 ====================
+
+
+    private OnlyOfficeConfig buildOnlyOfficeConfig(File file, String mode, boolean editable) {
+        String fileUrl = MinioUtil.getFileUrl(file.getBucketName(), file.getFilePath(), 1, TimeUnit.HOURS);
+        long updateTimestamp = file.getUpdateTime() != null
+                ? file.getUpdateTime().getTime() : System.currentTimeMillis();
+        String fileKey = file.getId() + "_" + updateTimestamp;
+        cn.colin.common.entity.User user = UserUtil.getUser();
+        String userId = user != null ? user.getId().toString() : "anonymous";
+        String userName = user != null ? user.getUserName() : "anonymous";
+
+        OnlyOfficeConfig.Document document = OnlyOfficeConfig.Document.builder()
+                .fileType(getFileExtension(file.getFileName()))
+                .key(fileKey)
+                .title(file.getFileName())
+                .url(fileUrl)
+                .permissions(OnlyOfficeConfig.Permissions.builder()
+                        .edit(editable)
+                        .download(true)
+                        .print(true)
+                        .review(editable)
+                        .comment(editable)
+                        .fillForms(editable)
+                        .modifyFilter(editable)
+                        .build())
+                .build();
+
+        OnlyOfficeConfig.Customization customization = OnlyOfficeConfig.Customization.builder()
+                .autosave(true)
+                .compactHeader(false)
+                .compactToolbar(false)
+                .build();
+
+        OnlyOfficeConfig.EditorConfig editorConfig = OnlyOfficeConfig.EditorConfig.builder()
+                .callbackUrl(onlyOfficeProperties.getCallbackUrl() + "/file/office/callback")
+                .mode(mode)
+                .lang("zh-CN")
+                .user(OnlyOfficeConfig.User.builder()
+                        .id(userId)
+                        .name(userName)
+                        .build())
+                .customization(customization)
+                .build();
+
+        return OnlyOfficeConfig.builder()
+                .document(document)
+                .editorConfig(editorConfig)
+                .height("100%")
+                .width("100%")
+                .type("desktop")
+                .documentType(mapToDocumentCategory(file.getContentType()))
+                .docServerUrl(onlyOfficeProperties.getDocServerUrl())
+                .build();
+    }
+    // ==================== 内容类型判断 ====================
+
+    private boolean isImageContentType(String contentType) {
+        if (contentType == null) return false;
+        return contentType.startsWith("image/");
+    }
+
+    private boolean isOfficeContentType(String contentType) {
         if (contentType == null) return false;
         return contentType.equals("application/msword") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
+                contentType.equals("application/vnd.ms-excel") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") ||
+                contentType.equals("application/vnd.ms-powerpoint") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.presentationml.presentation") ||
+                contentType.equals("application/pdf");
     }
 
-    /**
-     * 判断是否为Excel文档类型
-     */
-    private boolean isExcelContentType(String contentType) {
+    private boolean isEditableOfficeContentType(String contentType) {
         if (contentType == null) return false;
-        return contentType.equals("application/vnd.ms-excel") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        return contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.presentationml.presentation");
     }
 
-    /**
-     * 从Word文档提取文本内容
-     */
-    private String extractWordText(InputStream inputStream) throws Exception {
-        org.apache.poi.xwpf.usermodel.XWPFDocument document = new org.apache.poi.xwpf.usermodel.XWPFDocument(inputStream);
-        StringBuilder sb = new StringBuilder();
-        for (org.apache.poi.xwpf.usermodel.XWPFParagraph paragraph : document.getParagraphs()) {
-            if (!sb.isEmpty()) {
-                sb.append("\n");
-            }
-            sb.append(paragraph.getText());
+    private String getFileExtension(String fileName) {
+        if (fileName == null) return "docx";
+        int dotIdx = fileName.lastIndexOf('.');
+        if (dotIdx > 0 && dotIdx < fileName.length() - 1) {
+            return fileName.substring(dotIdx + 1).toLowerCase();
         }
-        document.close();
-        return sb.toString();
+        return "docx";
     }
 
-    /**
-     * 从Excel文档提取文本内容
-     */
-    private String extractExcelText(InputStream inputStream) throws Exception {
-        org.apache.poi.xssf.usermodel.XSSFWorkbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(inputStream);
-        StringBuilder sb = new StringBuilder();
-        for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
-            org.apache.poi.xssf.usermodel.XSSFSheet sheet = workbook.getSheetAt(sheetIndex);
-            if (!sb.isEmpty()) {
-                sb.append("\n--- Sheet: ").append(sheet.getSheetName()).append(" ---\n");
-            } else {
-                sb.append("--- Sheet: ").append(sheet.getSheetName()).append(" ---\n");
-            }
-            for (org.apache.poi.ss.usermodel.Row row : sheet) {
-                boolean firstCell = true;
-                for (org.apache.poi.ss.usermodel.Cell cell : row) {
-                    if (!firstCell) {
-                        sb.append("\t");
-                    }
-                    sb.append(getCellText(cell));
-                    firstCell = false;
-                }
-                sb.append("\n");
+    private String mapToDocumentCategory(String contentType) {
+        if (contentType == null) return "word";
+        if (contentType.contains("wordprocessing") || contentType.equals("application/msword")) return "word";
+        if (contentType.contains("spreadsheet") || contentType.equals("application/vnd.ms-excel")) return "cell";
+        if (contentType.contains("presentation") || contentType.equals("application/vnd.ms-powerpoint")) return "slide";
+        if (contentType.equals("application/pdf")) return "pdf";
+        return "word";
+    }
+
+    private Long parseFileIdFromKey(String key) {
+        if (key == null) return null;
+        int underscoreIdx = key.indexOf('_');
+        if (underscoreIdx > 0) {
+            try {
+                return Long.parseLong(key.substring(0, underscoreIdx));
+            } catch (NumberFormatException e) {
+                return null;
             }
         }
-        workbook.close();
-        return sb.toString();
-    }
-
-    /**
-     * 获取单元格文本
-     */
-    private String getCellText(org.apache.poi.ss.usermodel.Cell cell) {
-        if (cell == null) return "";
-        return switch (cell.getCellType()) {
-            case STRING -> cell.getStringCellValue();
-            case NUMERIC -> String.valueOf(cell.getNumericCellValue());
-            case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
-            case FORMULA -> cell.getCellFormula();
-            default -> "";
-        };
+        return null;
     }
 
     // ==================== 文件操作 ====================
@@ -315,7 +446,7 @@ public class FileServiceImpl implements FileService {
         validateTargetFolder(request.getTargetParentId());
         if (checkFileNameExists(request.getBucketName(), request.getTargetParentId(), file.getFileName(), file.getIsFolder()) > 0
                 && !file.getId().equals(request.getFileId())) {
-            throw new BusinessException("目标目录下已存在同名文件");
+            throw new FileServiceException("目标目录下已存在同名文件");
         }
         fileMapper.update(null, new LambdaUpdateWrapper<File>()
                 .eq(File::getId, request.getFileId())
@@ -329,26 +460,26 @@ public class FileServiceImpl implements FileService {
     public Long copyFile(CopyFileRequest request) {
         File file = getFileByIdOrThrow(request.getFileId());
         if (Boolean.TRUE.equals(file.getIsFolder())) {
-            throw new BusinessException("不支持复制文件夹");
+            throw new FileServiceException("不支持复制文件夹");
         }
         validateTargetFolder(request.getTargetParentId());
         if (checkFileNameExists(request.getBucketName(), request.getTargetParentId(), file.getFileName(), false) > 0) {
-            throw new BusinessException("目标目录下已存在同名文件: " + file.getFileName());
+            throw new FileServiceException("目标目录下已存在同名文件: " + file.getFileName());
         }
         try {
             String timestamp = String.valueOf(System.currentTimeMillis());
             String newFilePath = generateFilePathWithTimestamp(file.getFileName(), timestamp);
             File newFile = createFileEntity(request.getBucketName(), request.getTargetParentId(),
-                    file.getFileName(), newFilePath, file.getFileSize(), file.getContentType(), false);
+                    file.getFileName(), newFilePath, file.getFileSize(), file.getContentType());
             fileMapper.insert(newFile);
             MinioUtil.copyObject(request.getBucketName(), file.getFilePath(), newFilePath);
             log.info("复制文件成功: fileId={}, newFileId={}, targetParentId={}, newFilePath={}", request.getFileId(), newFile.getId(), request.getTargetParentId(), newFilePath);
             return newFile.getId();
-        } catch (BusinessException e) {
+        } catch (FileServiceException e) {
             throw e;
         } catch (Exception e) {
             log.error("复制文件失败: fileId={}", request.getFileId(), e);
-            throw new BusinessException("复制文件失败: " + e.getMessage());
+            throw new FileServiceException("复制文件失败: " + e.getMessage());
         }
     }
 
@@ -357,7 +488,7 @@ public class FileServiceImpl implements FileService {
     public boolean renameFile(RenameFileRequest request) {
         File file = getFileByIdOrThrow(request.getFileId());
         if (checkFileNameExists(request.getBucketName(), file.getParentId(), request.getNewName(), file.getIsFolder()) > 0) {
-            throw new BusinessException("同级目录下已存在同名文件");
+            throw new FileServiceException("同级目录下已存在同名文件");
         }
         fileMapper.update(null, new LambdaUpdateWrapper<File>()
                 .eq(File::getId, request.getFileId())
@@ -380,7 +511,7 @@ public class FileServiceImpl implements FileService {
                             .eq(File::getParentId, fileId));
                     if (childCount > 0) {
                         log.warn("文件夹不为空，无法删除: folderId={}, folderName={}", fileId, file.getFileName());
-                        throw new BusinessException("文件夹 " + file.getFileName() + " 不为空，无法删除");
+                        throw new FileServiceException("文件夹 " + file.getFileName() + " 不为空，无法删除");
                     }
                 } else {
                     // 是文件，从MinIO删除
@@ -406,7 +537,7 @@ public class FileServiceImpl implements FileService {
         if (file == null) {
             return null;
         }
-        return convertToFileResponse(file);
+        return convertToFileResponseBatch(Collections.singletonList(file)).getFirst();
     }
 
     // ==================== 私有方法 ====================
@@ -429,7 +560,7 @@ public class FileServiceImpl implements FileService {
         if (targetParentId != 0) {
             File targetFolder = fileMapper.selectById(targetParentId);
             if (targetFolder == null || !Boolean.TRUE.equals(targetFolder.getIsFolder())) {
-                throw new BusinessException("目标文件夹不存在");
+                throw new FileServiceException("目标文件夹不存在");
             }
         }
     }
@@ -440,7 +571,7 @@ public class FileServiceImpl implements FileService {
     private File getFileByIdOrThrow(Long fileId) {
         File file = fileMapper.selectById(fileId);
         if (file == null) {
-            throw new BusinessException("文件不存在");
+            throw new FileServiceException("文件不存在");
         }
         return file;
     }
@@ -449,7 +580,7 @@ public class FileServiceImpl implements FileService {
      * 创建文件实体
      */
     private File createFileEntity(String bucketName, Long parentId, String fileName, String filePath,
-                                  Long fileSize, String contentType, Boolean isFolder) {
+                                  Long fileSize, String contentType) {
         File fileEntity = new File();
         fileEntity.setBucketName(bucketName);
         fileEntity.setParentId(parentId);
@@ -457,22 +588,43 @@ public class FileServiceImpl implements FileService {
         fileEntity.setFilePath(filePath);
         fileEntity.setFileSize(fileSize);
         fileEntity.setContentType(contentType);
-        fileEntity.setIsFolder(isFolder);
+        fileEntity.setIsFolder(false);
         fileEntity.setUserId(getCurrentUserId());
         return fileEntity;
     }
 
     /**
-     * 转换File实体为FileResponse
+     * 批量转换File实体为FileResponse（解决N+1查询问题）
      */
-    private FileResponse convertToFileResponse(File file) {
-        String username = null;
-        if (file.getUserId() != null) {
-            User user = userMapper.selectById(file.getUserId());
-            if (user != null) {
-                username = user.getUserName();
-            }
+    private List<FileResponse> convertToFileResponseBatch(List<File> files) {
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
         }
+        // 收集所有非空的userId
+        List<Long> userIds = files.stream()
+                .map(File::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 批量查询用户信息
+        Map<Long, String> userNameMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            List<User> users = userMapper.selectBatchIds(userIds);
+            users.forEach(user -> userNameMap.put(user.getId(), user.getUserName()));
+        }
+
+        // 转换文件列表
+        return files.stream()
+                .map(file -> convertToFileResponse(file, userNameMap))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 转换File实体为FileResponse（使用预查询的用户信息）
+     */
+    private FileResponse convertToFileResponse(File file, Map<Long, String> userNameMap) {
+        String username = file.getUserId() != null ? userNameMap.get(file.getUserId()) : null;
         return FileResponse.builder()
                 .id(file.getId())
                 .fileName(file.getFileName())
@@ -486,25 +638,6 @@ public class FileServiceImpl implements FileService {
                 .updateTime(file.getUpdateTime())
                 .username(username)
                 .build();
-    }
-
-    /**
-     * 生成新的文件路径
-     * @deprecated 已废弃，现在使用 {@link #generateFilePathWithTimestamp(String, String)}
-     */
-    @Deprecated
-    private String generateNewFilePath(String bucketName, String originalPath, String originalName, Long targetParentId) {
-        int lastDotIndex = originalName.lastIndexOf('.');
-        String name = lastDotIndex > 0 ? originalName.substring(0, lastDotIndex) : originalName;
-        String extension = lastDotIndex > 0 ? originalName.substring(lastDotIndex) : "";
-        String newName = name + "_copy" + extension;
-        int counter = 1;
-        String tempName = newName;
-        while (checkFileNameExists(bucketName, targetParentId, tempName, false) > 0) {
-            tempName = name + "_copy_" + counter + extension;
-            counter++;
-        }
-        return tempName;
     }
 
     /**
@@ -527,7 +660,7 @@ public class FileServiceImpl implements FileService {
     private Long getCurrentUserId() {
         User user = UserUtil.getUser();
         if (user == null) {
-            throw new BusinessException("用户未登录");
+            throw new FileServiceException("用户未登录");
         }
         return user.getId();
     }

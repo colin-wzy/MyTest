@@ -15,8 +15,10 @@ public class Response<T> implements Serializable {
     private static final String SUCCESS_CODE = "000000";
     private static final String SUCCESS_MSG = "success";
 
-    public static final String FAILED_CODE = "999999";
-    private static final String FAILED_MSG = "failed";
+    public static final String DEFAULT_FAILED_CODE = "999999";
+    private static final String DEFAULT_FAILED_MSG = "failed";
+
+    public static final String FILE_FAILED_CODE = "888888";
 
     /**
      * 业务状态码
@@ -51,11 +53,11 @@ public class Response<T> implements Serializable {
     }
 
     public static <T> Response<T> failed() {
-        return failed(FAILED_CODE, FAILED_MSG);
+        return failed(DEFAULT_FAILED_CODE, DEFAULT_FAILED_MSG);
     }
 
     public static <T> Response<T> failed(String errorMsg) {
-        return failed(FAILED_CODE, errorMsg);
+        return failed(DEFAULT_FAILED_CODE, errorMsg);
     }
 
     @SneakyThrows

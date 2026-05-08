@@ -7,28 +7,29 @@ spring:
       strict: false
       datasource:
         wzy:
-          url: jdbc:mysql://192.168.0.108:3312/wzy_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+          url: jdbc:mysql://192.168.42.128:3306/wzy_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
           username: root
-          password: "[yutian@123]"
+          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
           hikari:
             max-lifetime: 600000
             connection-timeout: 30000
             validation-timeout: 5000
         slave:
-          url: jdbc:mysql://192.168.0.108:3312/slave_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+          url: jdbc:mysql://192.168.42.128:3306/slave_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
           username: root
-          password: "[yutian@123]"
+          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
           hikari:
             max-lifetime: 600000
             connection-timeout: 30000
             validation-timeout: 5000
-#        camunda:
-#          url: jdbc:mysql://127.0.0.1:3306/camunda?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
-#          username: root
-#          password: ENC(esyjb8RJAcQvzhFYnf/RBl/6DOqIoTA6Sb6kiCmpJGuCVLPHc94eE/8fUmRf3fhCXIPyfF7DDT9j8XCtUIadrw==)
+#          druid:
+#            initial-size: 5
+#            max-active: 20
+#            min-idle: 5
+#            max-wait: 30000
   data:
     redis:
-      host: 192.168.0.108
+      host: 192.168.42.128
       port: 6379
       lettuce:
         pool:
@@ -40,11 +41,6 @@ spring:
           max-idle: 8
           # 连接池中的最小空闲连接
           min-idle: 0
-#  elasticsearch:
-#    uris:
-#      - http://127.0.0.1:9200
-#    username: elastic
-#    password: jWv1I7UkurlE_ZBQ6_Au
   servlet:
     multipart:
       # 单个文件最大大小
@@ -53,16 +49,14 @@ spring:
       max-request-size: 100MB
 
 minio:
-  url: http://192.168.0.108:9000
-#  accessKey: igjkVGTriynTCRdC0I9U
-#  secretKey: KO58U83ulsZs3puKJNIGrAiKEvl14oUPwhAeW5qX
-  accessKey: xqYvzvFQg2QU0UrXEqNa
-  secretKey: vJTML8qSj9maYgRC2j59rpxuuC0BI2IlWe5Pn2tA
+  url: http://192.168.42.128:9000
+  accessKey: hk8lUbAQcBb2xOEvKMZT
+  secretKey: 7ilPto5g9g0Bkh7gQ83zAoUXOp7J13VARxine0dL
   enable: true
   bucket-name: first
 
 zookeeper:
-  connection-string: 127.0.0.1:2181
+  connection-string: 192.168.42.128:2181
   session-timeout-ms: 5000
   connection-timeout-ms: 3000
   retry:
@@ -128,17 +122,8 @@ knife4j:
   basic:
     enable: false
 
-#camunda:
-#  bpm:
-#    auto-deployment-enabled: false
-#    deployment-resource-pattern: classpath:/processes/*.bpmn
-#    database:
-#      table-prefix: camunda.
-#      type: mysql
-#      schema-update: true
-
 es:
-  host: 127.0.0.1
+  host: 192.168.42.128
   port: 9200
   scheme: http
   enable: false
@@ -146,7 +131,7 @@ es:
   password: jWv1I7UkurlE_ZBQ6_Au
 
 onlyoffice:
-  doc-server-url: http://192.168.0.108:8099
+  doc-server-url: http://192.168.42.128:8099
   callback-url: http://192.168.0.102:8888 #后端代码工程实际IP
   jwt-enabled: false
   jwt-secret: ""

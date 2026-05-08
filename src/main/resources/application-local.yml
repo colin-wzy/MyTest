@@ -1,6 +1,3 @@
-server:
-  port: 8888
-
 spring:
   application:
     name: wzyTest
@@ -146,6 +143,12 @@ es:
   username: elastic
   password: jWv1I7UkurlE_ZBQ6_Au
 
+onlyoffice:
+  doc-server-url: http://127.0.0.1:8099
+  callback-url: http://192.168.0.102:8888 #后端代码工程实际IP
+  jwt-enabled: false
+  jwt-secret: ""
+
 security:
-  permit-all: /redisTest/**, /user/login,/user/refreshToken, /doc.html, /v3/**, 
-    /swagger-ui.html, /swagger-ui/**, /swagger-resources/**, /webjars/**, /actuator/**
+  permit-all: /redisTest/**, /user/login,/user/refreshToken, /doc.html, /v3/**,
+    /swagger-ui.html, /swagger-ui/**, /swagger-resources/**, /webjars/**, /actuator/**, /file/office/callback

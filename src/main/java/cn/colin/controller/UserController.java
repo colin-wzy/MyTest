@@ -53,7 +53,6 @@ public class UserController {
     }
 
     @PostMapping("/findUserByName")
-    @Cacheable(value = "userName", key = "#request.userName")
     public Response<List<User>> findUserByName(@RequestBody FindUserByNameRequest request) {
         return Response.success(userService.findUserByName(request.getUserName()));
     }
